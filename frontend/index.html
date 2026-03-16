@@ -771,9 +771,9 @@ function renderProducts() {
       </div>
       ${sel ? `
       <div class="qty-row" onclick="event.stopPropagation()">
-        <button class="qty-btn" onclick="changeQty('${p.id}',-1)">−</button>
-        <span class="qty-val">${qty}</span>
-        <button class="qty-btn" onclick="changeQty('${p.id}',+1)">+</button>
+        <button class="qty-btn" onclick="event.stopPropagation(); changeQty('${p.id}',-1)">−</button>
+<span class="qty-val">${qty}</span>
+<button class="qty-btn" onclick="event.stopPropagation(); changeQty('${p.id}',+1)">+</button>
       </div>` : ''}
     </div>`;
   }).join('');
@@ -809,7 +809,7 @@ function renderOrder() {
         </div>
         <div style="display:flex;align-items:center">
           <span class="order-row-price">₹${p.price * cart[p.id]}</span>
-          <button class="order-row-remove" onclick="removeItem('${p.id}')">✕</button>
+          <button class="order-row-remove" onclick="event.stopPropagation(); removeItem('${p.id}')">✕</button>
         </div>
       </div>`).join('');
     totalBar.style.display = 'flex';
