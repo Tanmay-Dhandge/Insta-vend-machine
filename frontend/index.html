@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Insta-Vend</title>
+<link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+<h1 class="title">INSTA-VEND</h1>
+
+<div class="token">
+User : client1 <br>
+Tokens : <span id="token">100</span>
+</div>
+
+<div class="products">
+
+<div class="card">
+<img src="chips.png">
+<h3>Chips</h3>
+<p>₹20</p>
+<button onclick="buyProduct('chips',20)">Buy</button>
+</div>
+
+<div class="card">
+<img src="cola.png">
+<h3>Cola</h3>
+<p>₹30</p>
+<button onclick="buyProduct('cola',30)">Buy</button>
+</div>
+
+<div class="card">
+<img src="biscuit.png">
+<h3>Biscuit</h3>
+<p>₹15</p>
+<button onclick="buyProduct('biscuit',15)">Buy</button>
+</div>
+
+<div class="card">
+<img src="wafer.png">
+<h3>Wafer</h3>
+<p>₹25</p>
+<button onclick="buyProduct('wafer',25)">Buy</button>
+</div>
+
+</div>
+
+<script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
+<script src="mqtt.js"></script>
+<script src="app.js"></script>
+
+</body>
+</html>
