@@ -751,34 +751,67 @@ function mqttPublish(topic, payload) {
 ============================================================ */
 function renderProducts() {
   const grid = document.getElementById('itemsGrid');
+
   grid.innerHTML = PRODUCTS.map(p => {
-    const qty     = cart[p.id] || 0;
-    const sel     = qty > 0;
-    const lowSt   = p.stock <= 2;
-    const noSt    = p.stock === 0;
+
+    const qty = cart[p.id] || 0;
+    const selected = qty > 0;
+
+    const lowStock = p.stock <= 2;
+    const noStock = p.stock === 0;
+
     return `
-    <div class="item-card ${sel ? 'selected' : ''} ${noSt ? 'disabled-card' : ''}"
+    <div class="item-card ${selected ? 'selected' : ''}"
          id="card_${p.id}"
-         onclick="${noSt ? '' : `toggleItem('${p.id}')`}"
-         style="${noSt ? 'opacity:.35;cursor:not-allowed;pointer-events:none' : ''}">
-      <div class="item-check">✓</div>
+         style="${noStock ? 'opacity:.35;pointer-events:none' : ''}">
+
       <div class="item-slot">${p.id}</div>
+
       <span class="item-emoji">${p.emoji}</span>
+
       <div class="item-name">${p.name}</div>
-      <div class="item-price"><span>₹</span>${p.price}</div>
-      <div class="item-stock ${lowSt && !noSt ? 'low' : ''}">
-        ${noSt ? 'OUT OF STOCK' : p.stock + ' in stock'}
+
+      <div class="item-price">
+        <span>₹</span>${p.price}
       </div>
-      ${sel ? `
-      <div class="qty-row" onclick="event.stopPropagation()">
-        <button class="qty-btn" onclick="event.stopPropagation(); changeQty('${p.id}',-1)">−</button>
-<span class="qty-val">${qty}</span>
-<button class="qty-btn" onclick="event.stopPropagation(); changeQty('${p.id}',+1)">+</button>
-      </div>` : ''}
-    </div>`;
+
+      <div class="item-stock ${lowStock && !noStock ? 'low' : ''}">
+        ${noStock ? 'OUT OF STOCK' : p.stock + ' in stock'}
+      </div>
+
+      ${
+        !selected
+        ?
+        `<button class="qty-btn" 
+           style="margin-top:10px;width:100%" 
+           onclick="toggleItem('${p.id}')">
+           SELECT
+         </button>`
+        :
+        `
+        <div class="qty-row">
+
+          <button class="qty-btn"
+            onclick="changeQty('${p.id}',-1)">
+            −
+          </button>
+
+          <span class="qty-val">${qty}</span>
+
+          <button class="qty-btn"
+            onclick="changeQty('${p.id}',+1)">
+            +
+          </button>
+
+        </div>
+        `
+      }
+
+    </div>
+    `;
+
   }).join('');
 }
-
 /* ============================================================
    RENDER — COINS
 ============================================================ */
