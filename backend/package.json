@@ -1,7 +1,0 @@
-{
-"name":"vending-backend",
-"version":"1.0.0",
-"dependencies":{
-"mqtt":"^4.3.7"
-}
-}
