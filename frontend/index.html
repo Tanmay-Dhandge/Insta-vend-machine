@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>VendBot 3000</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/mqtt/4.3.7/mqtt.min.js"></script>
+<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;900&family=Share+Tech+Mono&display=swap" rel="stylesheet"/>
 
 <style>
@@ -917,61 +918,89 @@ function addCoin(val) {
   log('+₹' + val + ' inserted', 'info');
   updatePaymentUI();
 }
-
-function dispense() {
+function completeOrderAfterPayment(paymentResponse) {
   const t = total();
-  if (t === 0 || inserted < t) return;
+  const txnId = 'TXN-' + Date.now();
+  const ts = new Date().toISOString();
 
-  const txnId  = 'TXN-' + Date.now();
-  const ts     = new Date().toISOString();
-  const change = inserted - t;
-  const items  = PRODUCTS
+  const items = PRODUCTS
     .filter(p => (cart[p.id] || 0) > 0)
     .map(p => ({
-      slot:     p.id,
-      name:     p.name,
-      qty:      cart[p.id],
-      price:    p.price,
+      slot: p.id,
+      name: p.name,
+      qty: cart[p.id],
+      price: p.price,
       subtotal: p.price * cart[p.id]
     }));
 
-  /* ── Publish ORDER to HiveMQ ── */
+  // Send ORDER
   mqttPublish(TOPICS.order, {
     transactionId: txnId,
-    timestamp:     ts,
+    paymentId: paymentResponse.razorpay_payment_id,
     items,
-    totalAmount:   t
+    totalAmount: t
   });
 
-  /* ── Publish PAYMENT to HiveMQ ── */
-  mqttPublish(TOPICS.payment, {
-    transactionId:  txnId,
-    timestamp:      ts,
-    amountInserted: inserted,
-    totalCharged:   t,
-    changeDue:      change,
-    status:         'SUCCESS'
-  });
-
-  /* deduct stock */
-  items.forEach(i => {
-    const p = PRODUCTS.find(x => x.id === i.slot);
-    if (p) p.stock -= i.qty;
-  });
-
-  /* show modal */
-  const summary = items.map(i => `${i.emoji || ''} ${i.name} ×${i.qty}  ₹${i.subtotal}`).join('\n');
   showModal(
     '✅',
-    'ORDER CONFIRMED',
-    `${summary}\n\nPaid: ₹${inserted}   Change: ₹${change}`,
+    'PAYMENT SUCCESS',
+    `Paid ₹${t}\n\nDispensing items...`,
     txnId
   );
 
-  log('✓ Dispensed — ' + txnId, 'ok');
+  log('MQTT order sent after payment', 'ok');
 
-  cart = {}; inserted = 0;
-  renderProducts(); renderOrder();
+  // Reset
+  cart = {};
+  inserted = 0;
+
+  renderProducts();
+  renderOrder();
+}
+function dispense() {
+  const t = total();
+
+  if (t < 1) {
+    log('Select items first', 'err');
+    return;
+  }
+
+  // Convert to paise
+  const amount = t * 100;
+
+  const options = {
+    key: "rzp_test_Siw8TsPTDryHXG", // ONLY KEY_ID (safe)
+    amount: amount,
+    currency: "INR",
+    name: "VendBot 3000",
+    description: "Snack Purchase",
+    
+    handler: function (response) {
+      // Payment success
+      log('Payment successful: ' + response.razorpay_payment_id, 'ok');
+
+      // NOW trigger MQTT (real dispense)
+      completeOrderAfterPayment(response);
+    },
+
+    modal: {
+      ondismiss: function () {
+        log('Payment cancelled', 'err');
+      }
+    },
+
+    theme: {
+      color: "#00e5c8"
+    }
+  };
+
+  const rzp = new Razorpay(options);
+
+  rzp.on('payment.failed', function (response) {
+    log('Payment failed', 'err');
+  });
+
+  rzp.open();
 }
 
 function cancelAll() {
