@@ -6,32 +6,9 @@
 <title>VendBot 3000</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/mqtt/4.3.7/mqtt.min.js"></script>
 <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
-<script>
-  // Wait for Razorpay to load
-  window.razorpayLoaded = new Promise((resolve, reject) => {
-    if (window.Razorpay) {
-      resolve(window.Razorpay);
-    } else {
-      let attempts = 0;
-      const check = setInterval(() => {
-        attempts++;
-        if (window.Razorpay) {
-          clearInterval(check);
-          resolve(window.Razorpay);
-        } else if (attempts > 20) {
-          clearInterval(check);
-          reject(new Error('Razorpay failed to load'));
-        }
-      }, 250);
-    }
-  });
-</script>
 <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;900&family=Share+Tech+Mono&display=swap" rel="stylesheet"/>
 
 <style>
-/* ============================================================
-   RESET & ROOT
-============================================================ */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 :root {
@@ -66,7 +43,6 @@ body {
   overflow-x: hidden;
 }
 
-/* scanline effect */
 body::before {
   content: '';
   position: fixed; inset: 0; z-index: 9000;
@@ -78,16 +54,10 @@ body::before {
   pointer-events: none;
 }
 
-/* ============================================================
-   SCROLLBAR
-============================================================ */
 ::-webkit-scrollbar { width: 4px; }
 ::-webkit-scrollbar-track { background: var(--bg); }
 ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
 
-/* ============================================================
-   HEADER
-============================================================ */
 .header {
   display: flex;
   align-items: center;
@@ -151,18 +121,12 @@ body::before {
   letter-spacing: 1px;
 }
 
-/* ============================================================
-   LAYOUT
-============================================================ */
 .layout {
   display: grid;
   grid-template-columns: 1fr 320px;
   min-height: calc(100vh - 60px);
 }
 
-/* ============================================================
-   LEFT — MACHINE
-============================================================ */
 .machine-side {
   padding: 36px 32px;
   border-right: 1px solid var(--border);
@@ -187,7 +151,6 @@ body::before {
   background: var(--border);
 }
 
-/* 2x2 product grid */
 .items-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -227,7 +190,6 @@ body::before {
 }
 .item-card.selected::before { opacity: 1; }
 
-/* slot badge */
 .item-slot {
   position: absolute;
   top: 12px; right: 14px;
@@ -236,7 +198,6 @@ body::before {
   letter-spacing: 1.5px;
 }
 
-/* selection checkmark */
 .item-check {
   position: absolute;
   top: 10px; left: 12px;
@@ -289,7 +250,6 @@ body::before {
 }
 .item-stock.low { color: var(--amber); }
 
-/* quantity row on selected cards */
 .qty-row {
   display: none;
   align-items: center;
@@ -322,9 +282,6 @@ body::before {
   text-align: center;
 }
 
-/* ============================================================
-   COINS SECTION
-============================================================ */
 .coins-grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
@@ -352,7 +309,6 @@ body::before {
 }
 .coin-btn:active { transform: scale(0.94); }
 
-/* payment method toggle */
 .payment-methods {
   display: flex;
   gap: 10px;
@@ -401,9 +357,6 @@ body::before {
   cursor: not-allowed;
 }
 
-/* ============================================================
-   RIGHT — PANEL
-============================================================ */
 .panel-side {
   background: var(--panel);
   padding: 28px 22px;
@@ -419,7 +372,6 @@ body::before {
   padding: 18px;
 }
 
-/* ── order list ── */
 .order-empty {
   font-size: 0.75rem;
   color: var(--muted);
@@ -447,7 +399,6 @@ body::before {
 }
 .order-row-remove:hover { opacity: 1; }
 
-/* qty controls inside order row */
 .order-qty {
   display: flex;
   align-items: center;
@@ -502,7 +453,6 @@ body::before {
   color: var(--cyan);
 }
 
-/* ── inserted display ── */
 .inserted-display {
   background: #0a0a0a;
   border: 1px solid var(--border2);
@@ -542,7 +492,6 @@ body::before {
 .change-bar.ok  { color: var(--green); display: block; }
 .change-bar.short { color: var(--red); display: block; }
 
-/* ── dispense button ── */
 .btn-dispense {
   width: 100%;
   padding: 16px;
@@ -594,7 +543,6 @@ body::before {
 }
 .btn-cancel:hover { border-color: var(--red); color: var(--red); background: var(--red-dim); }
 
-/* ── log ── */
 .log-feed {
   max-height: 140px;
   overflow-y: auto;
@@ -613,9 +561,6 @@ body::before {
 .log-info { color: var(--muted2); }
 .log-err  { color: var(--red); }
 
-/* ============================================================
-   SUCCESS OVERLAY
-============================================================ */
 .overlay {
   position: fixed; inset: 0; z-index: 8000;
   background: rgba(0,0,0,0.88);
@@ -675,9 +620,6 @@ body::before {
 }
 .modal-close:hover { opacity: 0.85; }
 
-/* ============================================================
-   RESPONSIVE
-============================================================ */
 @media (max-width: 720px) {
   .layout { grid-template-columns: 1fr; }
   .machine-side { border-right: none; border-bottom: 1px solid var(--border); }
@@ -687,7 +629,6 @@ body::before {
 </head>
 <body>
 
-<!-- ── HEADER ─────────────────────────────────────────────── -->
 <header class="header">
   <div class="logo">VEND<span>BOT</span> 3000</div>
   <div class="header-right">
@@ -699,16 +640,12 @@ body::before {
   </div>
 </header>
 
-<!-- ── MAIN LAYOUT ────────────────────────────────────────── -->
 <div class="layout">
 
-  <!-- LEFT: Products + Coins -->
   <div class="machine-side">
 
     <div class="section-label">Select Product</div>
-    <div class="items-grid" id="itemsGrid">
-      <!-- rendered by JS -->
-    </div>
+    <div class="items-grid" id="itemsGrid"></div>
 
     <div class="section-label">Payment Method</div>
     <div class="payment-methods">
@@ -718,9 +655,7 @@ body::before {
 
     <div id="cashSection">
       <div class="section-label">Insert Money</div>
-      <div class="coins-grid" id="coinsGrid">
-        <!-- rendered by JS -->
-      </div>
+      <div class="coins-grid" id="coinsGrid"></div>
     </div>
 
     <div id="onlineSection" style="display:none">
@@ -732,10 +667,8 @@ body::before {
 
   </div>
 
-  <!-- RIGHT: Order + Controls + Log -->
   <div class="panel-side">
 
-    <!-- Order summary -->
     <div class="panel-box">
       <div class="section-label" style="margin-bottom:14px">Order</div>
       <div id="orderList">
@@ -747,7 +680,6 @@ body::before {
       </div>
     </div>
 
-    <!-- Inserted amount -->
     <div class="panel-box">
       <div class="section-label" style="margin-bottom:12px">Payment</div>
       <div class="inserted-display">
@@ -763,13 +695,11 @@ body::before {
       <div class="change-bar" id="changeBar"></div>
     </div>
 
-    <!-- Actions -->
     <button class="btn-dispense" id="btnDispense" disabled onclick="dispense()">
       ▶ DISPENSE
     </button>
     <button class="btn-cancel" onclick="cancelAll()">✕ Cancel &amp; Refund</button>
 
-    <!-- Log -->
     <div class="panel-box" style="flex:1">
       <div class="section-label" style="margin-bottom:10px">Transaction Log</div>
       <div class="log-feed" id="logFeed"></div>
@@ -778,7 +708,6 @@ body::before {
   </div>
 </div>
 
-<!-- ── SUCCESS MODAL ──────────────────────────────────────── -->
 <div class="overlay" id="overlay">
   <div class="modal">
     <span class="modal-icon" id="modalIcon">✅</span>
@@ -792,12 +721,11 @@ body::before {
 
 <script>
 /* ============================================================
-   ①  MQTT CONFIG  ← Edit these 3 lines for HiveMQ Cloud
+   MQTT CONFIG
 ============================================================ */
-// const MQTT_BROKER   = 'wss://broker.hivemq.com:8884/mqtt'; // public broker (works instantly)
-const MQTT_BROKER   = 'wss://366c887e88bf40c496821b5e646d3a12.s1.eu.hivemq.cloud:8884/mqtt'; // HiveMQ Cloud
-const MQTT_USERNAME = 'hivemq.webclient.1773649961783';   // leave blank for public broker
-const MQTT_PASSWORD = 'FklRd4q@2&7DUc,.AZx6';   // leave blank for public broker
+const MQTT_BROKER   = 'wss://366c887e88bf40c496821b5e646d3a12.s1.eu.hivemq.cloud:8884/mqtt';
+const MQTT_USERNAME = 'hivemq.webclient.1773649961783';
+const MQTT_PASSWORD = 'FklRd4q@2&7DUc,.AZx6';
 
 const TOPICS = {
   order:   'vendbot/order',
@@ -805,7 +733,7 @@ const TOPICS = {
 };
 
 /* ============================================================
-   ②  PRODUCTS — 4 items
+   PRODUCTS
 ============================================================ */
 const PRODUCTS = [
   { id: 'A1', name: 'COLA',   emoji: '🥤', price: 1, stock: 5 },
@@ -814,19 +742,15 @@ const PRODUCTS = [
   { id: 'B2', name: 'WATER',  emoji: '💧', price: 1, stock: 10 },
 ];
 
-/* ============================================================
-   ③  COIN DENOMINATIONS
-============================================================ */
 const COINS = [1, 2, 5, 10, 20, 50, 100, 500];
 
 /* ============================================================
    STATE
 ============================================================ */
-let cart            = {};   // { productId: quantity }
+let cart           = {};
 let inserted       = 0;
 let client         = null;
-let paymentMethod  = 'cash';  // 'cash' or 'online'
-let razorpayOrderId = null;
+let paymentMethod  = 'cash';
 
 /* ============================================================
    MQTT
@@ -835,11 +759,12 @@ function mqttConnect() {
   log('Connecting to HiveMQ...', 'info');
 
   const opts = {
-    clientId:       'vb_' + Math.random().toString(36).slice(2, 8),
-    clean:          true,
+    clientId:        'vb_' + Math.random().toString(36).slice(2, 8),
+    clean:           true,
     reconnectPeriod: 4000,
+    username:        MQTT_USERNAME,
+    password:        MQTT_PASSWORD,
   };
-  if (MQTT_USERNAME) { opts.username = MQTT_USERNAME; opts.password = MQTT_PASSWORD; }
 
   client = mqtt.connect(MQTT_BROKER, opts);
 
@@ -858,13 +783,27 @@ function mqttConnect() {
 }
 
 function mqttPublish(topic, payload) {
-  if (!client || !client.connected) {
-    log('Not connected — skipped', 'err');
-    return false;
-  }
-  client.publish(topic, JSON.stringify(payload), { qos: 1 });
-  log('Published → ' + topic, 'ok');
-  return true;
+  return new Promise((resolve, reject) => {
+    if (!client || !client.connected) {
+      log('Not connected — message queued for retry', 'err');
+      // Retry once after 2s if not connected
+      setTimeout(() => {
+        if (client && client.connected) {
+          client.publish(topic, JSON.stringify(payload), { qos: 1 }, (err) => {
+            if (err) { log('Publish retry failed: ' + err.message, 'err'); reject(err); }
+            else { log('Published (retry) → ' + topic, 'ok'); resolve(); }
+          });
+        } else {
+          reject(new Error('Still not connected'));
+        }
+      }, 2000);
+      return;
+    }
+    client.publish(topic, JSON.stringify(payload), { qos: 1 }, (err) => {
+      if (err) { log('Publish failed: ' + err.message, 'err'); reject(err); }
+      else { log('Published → ' + topic, 'ok'); resolve(); }
+    });
+  });
 }
 
 /* ============================================================
@@ -873,10 +812,10 @@ function mqttPublish(topic, payload) {
 function renderProducts() {
   const grid = document.getElementById('itemsGrid');
   grid.innerHTML = PRODUCTS.map(p => {
-    const qty     = cart[p.id] || 0;
-    const sel     = qty > 0;
-    const lowSt   = p.stock <= 2;
-    const noSt    = p.stock === 0;
+    const qty   = cart[p.id] || 0;
+    const sel   = qty > 0;
+    const lowSt = p.stock <= 2;
+    const noSt  = p.stock === 0;
     return `
     <div class="item-card ${sel ? 'selected' : ''}"
          id="card_${p.id}"
@@ -962,21 +901,35 @@ function updatePaymentUI() {
     bar.className = 'change-bar';
   }
 
-  // Cash payment button
   document.getElementById('btnDispense').disabled = !(t > 0 && inserted >= t && paymentMethod === 'cash');
-  
-  // Online payment button
+
   document.getElementById('onlineAmt').textContent = t;
   document.getElementById('btnPayOnline').disabled = !(t > 0 && paymentMethod === 'online');
 }
 
 /* ============================================================
-   ACTIONS
+   HELPERS
 ============================================================ */
 function total() {
   return PRODUCTS.reduce((s, p) => s + p.price * (cart[p.id] || 0), 0);
 }
 
+function buildItemsList() {
+  return PRODUCTS
+    .filter(p => (cart[p.id] || 0) > 0)
+    .map(p => ({
+      slot:     p.id,
+      name:     p.name,
+      emoji:    p.emoji,
+      qty:      cart[p.id],
+      price:    p.price,
+      subtotal: p.price * cart[p.id]
+    }));
+}
+
+/* ============================================================
+   ACTIONS
+============================================================ */
 function toggleItem(id) {
   const p = PRODUCTS.find(x => x.id === id);
   if (!p || p.stock === 0) return;
@@ -1015,11 +968,17 @@ function setPaymentMethod(method) {
   paymentMethod = method;
   document.getElementById('payCash').classList.toggle('active', method === 'cash');
   document.getElementById('payOnline').classList.toggle('active', method === 'online');
-  document.getElementById('cashSection').style.display = method === 'cash' ? 'block' : 'none';
+  document.getElementById('cashSection').style.display   = method === 'cash'   ? 'block' : 'none';
   document.getElementById('onlineSection').style.display = method === 'online' ? 'block' : 'none';
   updatePaymentUI();
 }
 
+/* ============================================================
+   RAZORPAY ONLINE PAYMENT
+   ─ MQTT is published immediately inside the handler callback
+     (Razorpay only calls handler on verified success).
+   ─ Backend verify call is optional/additive.
+============================================================ */
 async function payWithRazorpay() {
   const t = total();
   if (t === 0) return;
@@ -1028,14 +987,12 @@ async function payWithRazorpay() {
   document.getElementById('btnPayOnline').disabled = true;
 
   try {
-    const res = await fetch('http://localhost:5000/api/create-order', {
-      method: 'POST',
+    const res  = await fetch('http://localhost:5000/api/create-order', {
+      method:  'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ amount: t })
+      body:    JSON.stringify({ amount: t })
     });
-
     const data = await res.json();
-    console.log('Order response:', data);
 
     if (!data.order_id || !data.key) {
       log('Order creation failed', 'err');
@@ -1046,24 +1003,20 @@ async function payWithRazorpay() {
     log('Order created: ' + data.order_id, 'ok');
 
     const options = {
-      key: data.key,                  // ✅ ALWAYS from backend
-      order_id: data.order_id,
-      amount: data.amount,
-      currency: data.currency,
-
-      name: 'VendBot 3000',
+      key:       data.key,
+      order_id:  data.order_id,
+      amount:    data.amount,
+      currency:  data.currency,
+      name:      'VendBot 3000',
       description: 'Vending Machine Payment',
+      prefill: { contact: '9999999999', email: 'test@razorpay.com' },
+      theme: { color: '#00e5c8' },
 
-      prefill: {
-        contact: '9999999999',
-        email: 'test@razorpay.com'
-      },
-
+      /* ── SUCCESS HANDLER ── fires only after Razorpay confirms payment */
       handler: function (response) {
-        log('Payment success received', 'ok');
-
-        // ✅ FIX: call verification
-        verifyRazorpayPayment(response);
+        log('Payment success: ' + response.razorpay_payment_id, 'ok');
+        onPaymentSuccess(response);           // ← publish MQTT here
+        sendBackendVerification(response);    // ← optional backend verify
       },
 
       modal: {
@@ -1071,18 +1024,14 @@ async function payWithRazorpay() {
           log('Payment cancelled by user', 'info');
           document.getElementById('btnPayOnline').disabled = false;
         }
-      },
-
-      theme: { color: '#00e5c8' }
+      }
     };
 
-    const rzp = new Razorpay(options);
-
+    const rzp = new window.Razorpay(options);
     rzp.on('payment.failed', function (response) {
       log('Payment failed: ' + response.error.description, 'err');
       document.getElementById('btnPayOnline').disabled = false;
     });
-
     rzp.open();
 
   } catch (err) {
@@ -1091,113 +1040,116 @@ async function payWithRazorpay() {
   }
 }
 
-async function verifyRazorpayPayment(response) {
-  const t = total();
-  const change = inserted; // No change for online, but keeping for consistency
-  const items = PRODUCTS
-    .filter(p => (cart[p.id] || 0) > 0)
-    .map(p => ({
-      slot: p.id,
-      name: p.name,
-      qty: cart[p.id],
-      price: p.price,
-      subtotal: p.price * cart[p.id]
-    }));
+/* ============================================================
+   onPaymentSuccess — called immediately on Razorpay handler
+   Publishes both MQTT topics right away; no backend needed.
+============================================================ */
+function onPaymentSuccess(response) {
+  const t     = total();
+  const items = buildItemsList();
+  const ts    = new Date().toISOString();
 
-  try {
-    const res = await fetch('http://localhost:5000/api/verify-payment', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        razorpay_order_id: response.razorpay_order_id,
-        razorpay_payment_id: response.razorpay_payment_id,
-        razorpay_signature: response.razorpay_signature,
-        items: items
-      })
-    });
-    const data = await res.json();
+  /* ── 1. Publish ORDER topic ── */
+  mqttPublish(TOPICS.order, {
+    transactionId: response.razorpay_payment_id,
+    razorpayOrderId: response.razorpay_order_id,
+    timestamp:     ts,
+    paymentMethod: 'ONLINE',
+    items:         items,
+    totalAmount:   t
+  });
 
-    if (data.success) {
+  /* ── 2. Publish PAYMENT topic ── */
+  mqttPublish(TOPICS.payment, {
+    transactionId:   response.razorpay_payment_id,
+    razorpayOrderId: response.razorpay_order_id,
+    razorpaySignature: response.razorpay_signature,
+    timestamp:       ts,
+    paymentMethod:   'ONLINE',
+    amountPaid:      t,
+    currency:        'INR',
+    changeDue:       0,
+    status:          'SUCCESS',
+    items:           items
+  });
 
-  const t = total();
-
-  // deduct stock
+  /* ── 3. Deduct stock ── */
   items.forEach(i => {
     const p = PRODUCTS.find(x => x.id === i.slot);
     if (p) p.stock -= i.qty;
   });
 
-  // MQTT publish AFTER VERIFIED PAYMENT
-  mqttPublish(TOPICS.order, {
-    transactionId: response.razorpay_payment_id,
-    items
-  });
-
-  mqttPublish(TOPICS.payment, {
-    transactionId: response.razorpay_payment_id,
-    amountInserted: t,
-    totalCharged: t,
-    changeDue: 0,
-    status: 'SUCCESS'
-  });
-
-  const summary = items.map(i =>
-    `${i.name} ×${i.qty}  ₹${i.subtotal}`
-  ).join('\n');
-
+  /* ── 4. Show success modal ── */
+  const summary = items.map(i => `${i.emoji} ${i.name} ×${i.qty}  ₹${i.subtotal}`).join('\n');
   showModal(
     '✅',
     'PAYMENT SUCCESS',
-    `${summary}\n\nPaid: ₹${t}`,
+    `${summary}\n\nPaid Online: ₹${t}`,
     response.razorpay_payment_id
   );
 
-  log('✓ Payment verified — ' + response.razorpay_payment_id, 'ok');
-
+  /* ── 5. Reset state ── */
   cart = {};
   renderProducts();
   renderOrder();
-
-} 
-  } catch (err) {
-    log('Verification error: ' + err.message, 'err');
-  }
   document.getElementById('btnPayOnline').disabled = false;
 }
 
+/* ============================================================
+   sendBackendVerification — optional, runs in background
+   Does NOT block MQTT or UI. Logs result only.
+============================================================ */
+async function sendBackendVerification(response) {
+  try {
+    const res  = await fetch('http://localhost:5000/api/verify-payment', {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify({
+        razorpay_order_id:   response.razorpay_order_id,
+        razorpay_payment_id: response.razorpay_payment_id,
+        razorpay_signature:  response.razorpay_signature,
+      })
+    });
+    const data = await res.json();
+    if (data.success) log('Backend signature verified ✓', 'ok');
+    else              log('Backend verification failed', 'err');
+  } catch (err) {
+    log('Backend verify skipped: ' + err.message, 'info');
+  }
+}
+
+/* ============================================================
+   CASH DISPENSE
+============================================================ */
 function dispense() {
   const t = total();
   if (t === 0 || inserted < t) return;
 
-  const txnId  = 'TXN-' + Date.now();
+  const txnId  = 'CASH-' + Date.now();
   const ts     = new Date().toISOString();
   const change = inserted - t;
-  const items  = PRODUCTS
-    .filter(p => (cart[p.id] || 0) > 0)
-    .map(p => ({
-      slot:     p.id,
-      name:     p.name,
-      qty:      cart[p.id],
-      price:    p.price,
-      subtotal: p.price * cart[p.id]
-    }));
+  const items  = buildItemsList();
 
-  /* ── Publish ORDER to HiveMQ ── */
+  /* ── Publish ORDER ── */
   mqttPublish(TOPICS.order, {
     transactionId: txnId,
     timestamp:     ts,
+    paymentMethod: 'CASH',
     items,
     totalAmount:   t
   });
 
-  /* ── Publish PAYMENT to HiveMQ ── */
+  /* ── Publish PAYMENT ── */
   mqttPublish(TOPICS.payment, {
     transactionId:  txnId,
     timestamp:      ts,
+    paymentMethod:  'CASH',
     amountInserted: inserted,
     totalCharged:   t,
     changeDue:      change,
-    status:         'SUCCESS'
+    currency:       'INR',
+    status:         'SUCCESS',
+    items
   });
 
   /* deduct stock */
@@ -1206,8 +1158,7 @@ function dispense() {
     if (p) p.stock -= i.qty;
   });
 
-  /* show modal */
-  const summary = items.map(i => `${i.emoji || ''} ${i.name} ×${i.qty}  ₹${i.subtotal}`).join('\n');
+  const summary = items.map(i => `${i.emoji} ${i.name} ×${i.qty}  ₹${i.subtotal}`).join('\n');
   showModal(
     '✅',
     'ORDER CONFIRMED',
@@ -1248,7 +1199,7 @@ function closeModal() {
    HELPERS
 ============================================================ */
 function setConn(state, label) {
-  document.getElementById('connDot').className   = 'conn-dot ' + state;
+  document.getElementById('connDot').className    = 'conn-dot ' + state;
   document.getElementById('connLabel').textContent = label;
 }
 
