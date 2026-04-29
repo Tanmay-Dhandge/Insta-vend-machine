@@ -594,7 +594,7 @@ async function handlePay(btn,e){
   const t=total();if(!t)return;
   log('Initiating payment...','info');btn.disabled=true;
   try{
-    const res=await fetch('http://localhost:5000/api/create-order',{
+    const res=await fetch('https://backend-pro-hitm.onrender.com/api/create-order',{
       method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({amount:t})
     });
     const data=await res.json();
