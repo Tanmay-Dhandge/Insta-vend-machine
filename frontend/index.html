@@ -6,6 +6,26 @@
 <title>VendBot 3000</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/mqtt/4.3.7/mqtt.min.js"></script>
 <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+<script>
+  // Wait for Razorpay to load
+  window.razorpayLoaded = new Promise((resolve, reject) => {
+    if (window.Razorpay) {
+      resolve(window.Razorpay);
+    } else {
+      let attempts = 0;
+      const check = setInterval(() => {
+        attempts++;
+        if (window.Razorpay) {
+          clearInterval(check);
+          resolve(window.Razorpay);
+        } else if (attempts > 20) {
+          clearInterval(check);
+          reject(new Error('Razorpay failed to load'));
+        }
+      }, 250);
+    }
+  });
+</script>
 <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;900&family=Share+Tech+Mono&display=swap" rel="stylesheet"/>
 
 <style>
@@ -332,6 +352,55 @@ body::before {
 }
 .coin-btn:active { transform: scale(0.94); }
 
+/* payment method toggle */
+.payment-methods {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 24px;
+}
+.pay-method-btn {
+  flex: 1;
+  padding: 12px;
+  border: 1px solid var(--border2);
+  border-radius: 10px;
+  background: var(--card);
+  color: var(--muted2);
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.pay-method-btn:hover { border-color: var(--cyan); color: var(--text); }
+.pay-method-btn.active {
+  border-color: var(--cyan);
+  background: var(--cyan-dim);
+  color: var(--cyan);
+}
+
+.btn-pay-online {
+  width: 100%;
+  padding: 16px;
+  border: none;
+  border-radius: 10px;
+  background: linear-gradient(135deg, #675ce7 0%, #8b5cf6 100%);
+  color: #fff;
+  font-family: var(--font-head);
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 2px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.btn-pay-online:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 24px rgba(104,92,231,0.4);
+}
+.btn-pay-online:disabled {
+  background: var(--border2);
+  color: var(--muted);
+  cursor: not-allowed;
+}
+
 /* ============================================================
    RIGHT — PANEL
 ============================================================ */
@@ -641,9 +710,24 @@ body::before {
       <!-- rendered by JS -->
     </div>
 
-    <div class="section-label">Insert Money</div>
-    <div class="coins-grid" id="coinsGrid">
-      <!-- rendered by JS -->
+    <div class="section-label">Payment Method</div>
+    <div class="payment-methods">
+      <button class="pay-method-btn active" id="payCash" onclick="setPaymentMethod('cash')">💵 Cash</button>
+      <button class="pay-method-btn" id="payOnline" onclick="setPaymentMethod('online')">📱 Online</button>
+    </div>
+
+    <div id="cashSection">
+      <div class="section-label">Insert Money</div>
+      <div class="coins-grid" id="coinsGrid">
+        <!-- rendered by JS -->
+      </div>
+    </div>
+
+    <div id="onlineSection" style="display:none">
+      <div class="section-label">Online Payment</div>
+      <button class="btn-pay-online" id="btnPayOnline" onclick="payWithRazorpay()" disabled>
+        💳 Pay ₹<span id="onlineAmt">0</span> with Razorpay
+      </button>
     </div>
 
   </div>
@@ -738,9 +822,11 @@ const COINS = [1, 2, 5, 10, 20, 50, 100, 500];
 /* ============================================================
    STATE
 ============================================================ */
-let cart     = {};   // { productId: quantity }
-let inserted = 0;
-let client   = null;
+let cart            = {};   // { productId: quantity }
+let inserted       = 0;
+let client         = null;
+let paymentMethod  = 'cash';  // 'cash' or 'online'
+let razorpayOrderId = null;
 
 /* ============================================================
    MQTT
@@ -876,7 +962,12 @@ function updatePaymentUI() {
     bar.className = 'change-bar';
   }
 
-  document.getElementById('btnDispense').disabled = !(t > 0 && inserted >= t);
+  // Cash payment button
+  document.getElementById('btnDispense').disabled = !(t > 0 && inserted >= t && paymentMethod === 'cash');
+  
+  // Online payment button
+  document.getElementById('onlineAmt').textContent = t;
+  document.getElementById('btnPayOnline').disabled = !(t > 0 && paymentMethod === 'online');
 }
 
 /* ============================================================
@@ -914,15 +1005,95 @@ function removeItem(id) {
 }
 
 function addCoin(val) {
+  if (paymentMethod !== 'cash') return;
   inserted += val;
   log('+₹' + val + ' inserted', 'info');
   updatePaymentUI();
 }
-function completeOrderAfterPayment(paymentResponse) {
-  const t = total();
-  const txnId = 'TXN-' + Date.now();
-  const ts = new Date().toISOString();
 
+function setPaymentMethod(method) {
+  paymentMethod = method;
+  document.getElementById('payCash').classList.toggle('active', method === 'cash');
+  document.getElementById('payOnline').classList.toggle('active', method === 'online');
+  document.getElementById('cashSection').style.display = method === 'cash' ? 'block' : 'none';
+  document.getElementById('onlineSection').style.display = method === 'online' ? 'block' : 'none';
+  updatePaymentUI();
+}
+
+async function payWithRazorpay() {
+  const t = total();
+  if (t === 0) return;
+
+  log('Creating Razorpay order...', 'info');
+  document.getElementById('btnPayOnline').disabled = true;
+
+  try {
+    const res = await fetch('http://localhost:5000/api/create-order', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ amount: t })
+    });
+
+    const data = await res.json();
+    console.log('Order response:', data);
+
+    if (!data.order_id || !data.key) {
+      log('Order creation failed', 'err');
+      document.getElementById('btnPayOnline').disabled = false;
+      return;
+    }
+
+    log('Order created: ' + data.order_id, 'ok');
+
+    const options = {
+      key: data.key,                  // ✅ ALWAYS from backend
+      order_id: data.order_id,
+      amount: data.amount,
+      currency: data.currency,
+
+      name: 'VendBot 3000',
+      description: 'Vending Machine Payment',
+
+      prefill: {
+        contact: '9999999999',
+        email: 'test@razorpay.com'
+      },
+
+      handler: function (response) {
+        log('Payment success received', 'ok');
+
+        // ✅ FIX: call verification
+        verifyRazorpayPayment(response);
+      },
+
+      modal: {
+        ondismiss: function () {
+          log('Payment cancelled by user', 'info');
+          document.getElementById('btnPayOnline').disabled = false;
+        }
+      },
+
+      theme: { color: '#00e5c8' }
+    };
+
+    const rzp = new Razorpay(options);
+
+    rzp.on('payment.failed', function (response) {
+      log('Payment failed: ' + response.error.description, 'err');
+      document.getElementById('btnPayOnline').disabled = false;
+    });
+
+    rzp.open();
+
+  } catch (err) {
+    log('Razorpay error: ' + err.message, 'err');
+    document.getElementById('btnPayOnline').disabled = false;
+  }
+}
+
+async function verifyRazorpayPayment(response) {
+  const t = total();
+  const change = inserted; // No change for online, but keeping for consistency
   const items = PRODUCTS
     .filter(p => (cart[p.id] || 0) > 0)
     .map(p => ({
@@ -933,74 +1104,121 @@ function completeOrderAfterPayment(paymentResponse) {
       subtotal: p.price * cart[p.id]
     }));
 
-  // Send ORDER
-  mqttPublish(TOPICS.order, {
-    transactionId: txnId,
-    paymentId: paymentResponse.razorpay_payment_id,
-    items,
-    totalAmount: t
+  try {
+    const res = await fetch('http://localhost:5000/api/verify-payment', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        razorpay_order_id: response.razorpay_order_id,
+        razorpay_payment_id: response.razorpay_payment_id,
+        razorpay_signature: response.razorpay_signature,
+        items: items
+      })
+    });
+    const data = await res.json();
+
+    if (data.success) {
+
+  const t = total();
+
+  // deduct stock
+  items.forEach(i => {
+    const p = PRODUCTS.find(x => x.id === i.slot);
+    if (p) p.stock -= i.qty;
   });
+
+  // MQTT publish AFTER VERIFIED PAYMENT
+  mqttPublish(TOPICS.order, {
+    transactionId: response.razorpay_payment_id,
+    items
+  });
+
+  mqttPublish(TOPICS.payment, {
+    transactionId: response.razorpay_payment_id,
+    amountInserted: t,
+    totalCharged: t,
+    changeDue: 0,
+    status: 'SUCCESS'
+  });
+
+  const summary = items.map(i =>
+    `${i.name} ×${i.qty}  ₹${i.subtotal}`
+  ).join('\n');
 
   showModal(
     '✅',
     'PAYMENT SUCCESS',
-    `Paid ₹${t}\n\nDispensing items...`,
+    `${summary}\n\nPaid: ₹${t}`,
+    response.razorpay_payment_id
+  );
+
+  log('✓ Payment verified — ' + response.razorpay_payment_id, 'ok');
+
+  cart = {};
+  renderProducts();
+  renderOrder();
+
+} 
+  } catch (err) {
+    log('Verification error: ' + err.message, 'err');
+  }
+  document.getElementById('btnPayOnline').disabled = false;
+}
+
+function dispense() {
+  const t = total();
+  if (t === 0 || inserted < t) return;
+
+  const txnId  = 'TXN-' + Date.now();
+  const ts     = new Date().toISOString();
+  const change = inserted - t;
+  const items  = PRODUCTS
+    .filter(p => (cart[p.id] || 0) > 0)
+    .map(p => ({
+      slot:     p.id,
+      name:     p.name,
+      qty:      cart[p.id],
+      price:    p.price,
+      subtotal: p.price * cart[p.id]
+    }));
+
+  /* ── Publish ORDER to HiveMQ ── */
+  mqttPublish(TOPICS.order, {
+    transactionId: txnId,
+    timestamp:     ts,
+    items,
+    totalAmount:   t
+  });
+
+  /* ── Publish PAYMENT to HiveMQ ── */
+  mqttPublish(TOPICS.payment, {
+    transactionId:  txnId,
+    timestamp:      ts,
+    amountInserted: inserted,
+    totalCharged:   t,
+    changeDue:      change,
+    status:         'SUCCESS'
+  });
+
+  /* deduct stock */
+  items.forEach(i => {
+    const p = PRODUCTS.find(x => x.id === i.slot);
+    if (p) p.stock -= i.qty;
+  });
+
+  /* show modal */
+  const summary = items.map(i => `${i.emoji || ''} ${i.name} ×${i.qty}  ₹${i.subtotal}`).join('\n');
+  showModal(
+    '✅',
+    'ORDER CONFIRMED',
+    `${summary}\n\nPaid: ₹${inserted}   Change: ₹${change}`,
     txnId
   );
 
-  log('MQTT order sent after payment', 'ok');
+  log('✓ Dispensed — ' + txnId, 'ok');
 
-  // Reset
-  cart = {};
-  inserted = 0;
-
-  renderProducts();
-  renderOrder();
-}
-function dispense() {
-  const t = total();
-
-  if (t < 1) {
-    log('Select items first', 'err');
-    return;
-  }
-
-  // Convert to paise
-  const amount = t * 100;
-
-  const options = {
-    key: "rzp_test_Siw8TsPTDryHXG", // ONLY KEY_ID (safe)
-    amount: amount,
-    currency: "INR",
-    name: "VendBot 3000",
-    description: "Snack Purchase",
-    
-    handler: function (response) {
-      // Payment success
-      log('Payment successful: ' + response.razorpay_payment_id, 'ok');
-
-      // NOW trigger MQTT (real dispense)
-      completeOrderAfterPayment(response);
-    },
-
-    modal: {
-      ondismiss: function () {
-        log('Payment cancelled', 'err');
-      }
-    },
-
-    theme: {
-      color: "#00e5c8"
-    }
-  };
-
-  const rzp = new Razorpay(options);
-
-  rzp.on('payment.failed', function (response) {
-    log('Payment failed', 'err');
-  });
-
-  rzp.open();
+  cart = {}; inserted = 0;
+  renderProducts(); renderOrder();
 }
 
 function cancelAll() {
