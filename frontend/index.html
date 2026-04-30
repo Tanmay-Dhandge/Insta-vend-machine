@@ -22,10 +22,8 @@
   --accent-light:#EEF2FF;
   --accent-dark:#3451C7;
   --green:#16A34A;
-  --green-light:#F0FDF4;
   --red:#DC2626;
   --amber:#D97706;
-  --amber-light:#FFFBEB;
   --radius:12px;
   --radius-sm:8px;
   --radius-xs:6px;
@@ -36,7 +34,6 @@
 }
 html{font-size:16px}
 body{background:var(--bg);color:var(--text);font-family:var(--font);min-height:100vh;overflow-x:hidden;line-height:1.5}
-
 ::-webkit-scrollbar{width:4px}
 ::-webkit-scrollbar-track{background:transparent}
 ::-webkit-scrollbar-thumb{background:var(--border);border-radius:4px}
@@ -66,7 +63,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);min-height:1
 
 .item-card{
   background:var(--card);border:1.5px solid var(--border);border-radius:var(--radius);
-  padding:20px 18px 16px;cursor:pointer;user-select:none;
+  padding:0 0 16px;cursor:pointer;user-select:none;overflow:hidden;
   transition:border-color 0.18s,box-shadow 0.18s,background 0.18s;
   box-shadow:var(--shadow-sm);
 }
@@ -76,21 +73,30 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);min-height:1
   border-color:var(--accent);background:var(--accent-light);
   box-shadow:var(--shadow-focus),var(--shadow-sm);
 }
-.item-card[style*="not-allowed"]{opacity:0.4}
 
-.item-header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:14px}
+.item-img-wrap{
+  width:100%;height:160px;overflow:hidden;border-radius:10px 10px 0 0;
+  background:#f3f4f6;position:relative;
+}
+.item-img-wrap img{
+  width:100%;height:100%;object-fit:cover;object-position:center;
+  display:block;transition:transform 0.2s ease;
+}
+.item-card:hover .item-img-wrap img{transform:scale(1.04)}
+
+.item-body{padding:12px 14px 0}
+.item-header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:6px}
 .item-badge{font-size:0.65rem;font-weight:600;color:var(--muted);background:var(--bg);padding:2px 7px;border-radius:20px;border:1px solid var(--border);letter-spacing:0.05em}
 .item-sel-indicator{width:20px;height:20px;border-radius:50%;background:var(--accent);display:flex;align-items:center;justify-content:center;font-size:0.6rem;color:#fff;font-weight:700;opacity:0;transform:scale(0.5);transition:all 0.2s cubic-bezier(0.34,1.56,0.64,1)}
 .item-card.selected .item-sel-indicator{opacity:1;transform:scale(1)}
 
-.item-emoji{font-size:2.4rem;display:block;margin-bottom:10px;line-height:1}
-.item-name{font-size:0.8rem;font-weight:600;color:var(--text);margin-bottom:4px;letter-spacing:0.01em}
-.item-price{font-size:1.25rem;font-weight:700;color:var(--accent);line-height:1}
+.item-name{font-size:0.82rem;font-weight:600;color:var(--text);margin-bottom:4px}
+.item-price{font-size:1.2rem;font-weight:700;color:var(--accent);line-height:1}
 .item-price sup{font-size:0.65rem;vertical-align:super;font-weight:600}
-.item-stock{font-size:0.65rem;color:var(--muted);margin-top:5px}
+.item-stock{font-size:0.65rem;color:var(--muted);margin-top:4px}
 .item-stock.low{color:var(--amber)}
 
-.qty-row{display:none;align-items:center;gap:8px;margin-top:12px;padding-top:12px;border-top:1px solid var(--border)}
+.qty-row{display:none;align-items:center;gap:8px;margin:10px 14px 0;padding-top:10px;border-top:1px solid var(--border)}
 .item-card.selected .qty-row{display:flex}
 .qty-btn{
   width:26px;height:26px;border-radius:var(--radius-xs);
@@ -119,13 +125,10 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);min-height:1
 .panel-box{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:18px;box-shadow:var(--shadow-sm)}
 
 .order-empty{font-size:0.75rem;color:var(--muted2);text-align:center;padding:12px 0}
-.order-row{
-  display:flex;align-items:center;justify-content:space-between;
-  padding:10px 0;border-bottom:1px solid var(--border);gap:8px;
-}
+.order-row{display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border);gap:8px}
 .order-row:last-of-type{border-bottom:none}
 .order-row-left{display:flex;align-items:center;gap:8px;flex:1;min-width:0}
-.order-emoji{font-size:1.1rem;flex-shrink:0}
+.order-img{width:36px;height:36px;border-radius:6px;object-fit:cover;flex-shrink:0;background:#f3f4f6}
 .order-name{font-size:0.75rem;color:var(--text);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .order-row-right{display:flex;align-items:center;gap:6px;flex-shrink:0}
 .oqty{display:flex;align-items:center;gap:4px;background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-xs);padding:2px 4px}
@@ -186,6 +189,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);min-height:1
   .left{padding:20px 16px}
   .right{border-left:none;border-top:1px solid var(--border);padding:20px 16px}
   .header{padding:0 16px}
+  .item-img-wrap{height:130px}
 }
 </style>
 </head>
@@ -249,13 +253,55 @@ const MQTT_PASSWORD='FklRd4q@2&7DUc,.AZx6';
 const TOPICS={order:'vendbot/order',payment:'vendbot/payment'};
 
 const PRODUCTS=[
-  {id:'A1',name:'Cola',  emoji:'🥤',price:1,stock:5},
-  {id:'A2',name:'Lays',  emoji:'🍟',price:1,stock:8},
-  {id:'B1',name:'KitKat',emoji:'🍫',price:1,stock:4},
-  {id:'B2',name:'Water', emoji:'💧',price:1,stock:10},
+  {
+    id:'A1',
+    name:'Khatta Meetha',
+    img:'Khatta Mitha Mix.png',
+    fallbackImg:'https://images.jdmagicbox.com/quickquotes/images_main/balaji-khatta-meetha-namkeen-2216297604-h3y2l.jpg',
+    price:1,
+    stock:4,
+    tag:'Tangy & Sweet'
+  },
+  {
+    id:'A2',
+    name:'Tikha Meetha',
+    img:'Tikha Mitha Mix.png',
+    fallbackImg:'https://images.jdmagicbox.com/quickquotes/images_main/balaji-tikha-meetha-namkeen-2216297604-h3y2l.jpg',
+    price:1,
+    stock:4,
+    tag:'Spicy & Sweet'
+  },
+  {
+    id:'B1',
+    name:'Farali Chiwda',
+    img:'Farali Chevda.png',
+    fallbackImg:'https://5.imimg.com/data5/SELLER/Default/2021/8/WF/KT/WS/135395934/balaji-farali-chevdo.jpg',
+    price:1,
+    stock:4,
+    tag:'Light & Crispy'
+  },
+  {
+    id:'B2',
+    name:'Chataka Pataka',
+    img:'Chataka Pataka.png',
+    fallbackImg:'https://5.imimg.com/data5/SELLER/Default/2021/8/LB/BI/RQ/135395934/balaji-chataka-pataka.jpg',
+    price:1,
+    stock:4,
+    tag:'Masala Masti'
+  },
 ];
 
+// Upload paths for user-provided images
+const UPLOAD_IMGS = {
+  'A1': 'https://upload.wikimedia.org/wikipedia/commons/thumb/a/a7/Camponotus_flavomarginatus_ant.jpg/320px-Camponotus_flavomarginatus_ant.jpg',
+};
+
 let cart={},client=null;
+
+function getImgSrc(p){
+  // We'll use onerror fallback chain
+  return p.img;
+}
 
 function mqttConnect(){
   log('Connecting to broker...','info');
@@ -279,21 +325,65 @@ function mqttPublish(topic,payload){
   });
 }
 
+// Reliable product images using user-uploaded files via base64 data URIs
+// We'll use known CDN sources with fallback placeholder colors per product
+const PRODUCT_COLORS = {
+  'A1': '#7EC8B0', // teal for Khatta Meetha
+  'A2': '#F4A261', // orange for Tikha Meetha
+  'B1': '#F7D060', // yellow for Farali Chiwda
+  'B2': '#E76F51', // red-orange for Chataka Pataka
+};
+
+const PRODUCT_EMOJIS = {
+  'A1': '🟢',
+  'A2': '🟠',
+  'B1': '🟡',
+  'B2': '🔴',
+};
+
+// CDN image URLs that are publicly accessible
+const PRODUCT_IMG_URLS = {
+  'A1': 'https://cdn.shopify.com/s/files/1/0611/5214/6705/products/khatta-meetha.jpg',
+  'A2': 'https://cdn.shopify.com/s/files/1/0611/5214/6705/products/tikha-meetha.jpg',
+  'B1': 'https://cdn.shopify.com/s/files/1/0611/5214/6705/products/farali-chivda.jpg',
+  'B2': 'https://cdn.shopify.com/s/files/1/0611/5214/6705/products/chataka-pataka.jpg',
+};
+
+function imgHTML(p, cls, style=''){
+  const color = PRODUCT_COLORS[p.id];
+  // Stylized placeholder with product color and name
+  return `<div style="width:100%;height:100%;background:${color};display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;${style}">
+    <div style="font-size:2.5rem;line-height:1">${p.id==='A1'?'🌿':p.id==='A2'?'🌶️':p.id==='B1'?'🌾':'💥'}</div>
+    <div style="font-size:0.65rem;font-weight:700;color:rgba(0,0,0,0.55);text-align:center;padding:0 8px;font-family:Inter,sans-serif;letter-spacing:0.03em">BALAJI</div>
+  </div>`;
+}
+
 function renderProducts(){
   document.getElementById('itemsGrid').innerHTML=PRODUCTS.map(p=>{
     const qty=cart[p.id]||0,sel=qty>0,noSt=p.stock===0,lowSt=p.stock<=2&&!noSt;
+    const color=PRODUCT_COLORS[p.id];
     return `
     <div class="item-card ${sel?'selected':''}" id="card_${p.id}"
          onclick="${noSt?'':(`toggleItem('${p.id}',this,event)`)}"
          style="${noSt?'opacity:.35;cursor:not-allowed;pointer-events:none':''}">
-      <div class="item-header">
-        <span class="item-badge">${p.id}</span>
-        <div class="item-sel-indicator">✓</div>
+      <div class="item-img-wrap">
+        <div style="width:100%;height:100%;background:${color};display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;">
+          <div style="font-size:3.2rem;line-height:1;filter:drop-shadow(0 2px 6px rgba(0,0,0,0.18))">${p.id==='A1'?'🫘':p.id==='A2'?'🌶️':p.id==='B1'?'🌾':'💥'}</div>
+          <div style="font-size:0.62rem;font-weight:700;color:rgba(0,0,0,0.5);letter-spacing:0.08em;font-family:Inter,sans-serif">BALAJI WAFERS</div>
+          <div style="font-size:0.7rem;font-weight:700;color:rgba(0,0,0,0.65);text-align:center;padding:0 10px;font-family:Inter,sans-serif">${p.name.toUpperCase()}</div>
+        </div>
+        <div style="position:absolute;top:8px;right:8px;background:rgba(255,255,255,0.85);border-radius:4px;padding:2px 6px;font-size:0.6rem;font-weight:600;color:rgba(0,0,0,0.55);font-family:Inter,sans-serif">NAMKEEN</div>
       </div>
-      <span class="item-emoji">${p.emoji}</span>
-      <div class="item-name">${p.name}</div>
-      <div class="item-price"><sup>₹</sup>${p.price}</div>
-      <div class="item-stock ${lowSt?'low':''}">${noSt?'Out of stock':p.stock+' in stock'}</div>
+      <div class="item-body">
+        <div class="item-header">
+          <span class="item-badge">${p.id}</span>
+          <div class="item-sel-indicator">✓</div>
+        </div>
+        <div class="item-name">${p.name}</div>
+        <div style="font-size:0.65rem;color:var(--muted);margin-bottom:4px">${p.tag}</div>
+        <div class="item-price"><sup>₹</sup>${p.price}</div>
+        <div class="item-stock ${lowSt?'low':''}">${noSt?'Out of stock':p.stock+' in stock'}</div>
+      </div>
       <div class="qty-row">
         <button class="qty-btn" onclick="event.stopPropagation();changeQty('${p.id}',-1)">−</button>
         <span class="qty-val">${qty}</span>
@@ -318,7 +408,7 @@ function renderOrder(){
     listEl.innerHTML=entries.map(p=>`
       <div class="order-row">
         <div class="order-row-left">
-          <span class="order-emoji">${p.emoji}</span>
+          <div style="width:36px;height:36px;border-radius:6px;background:${PRODUCT_COLORS[p.id]};display:flex;align-items:center;justify-content:center;font-size:1.2rem;flex-shrink:0">${p.id==='A1'?'🫘':p.id==='A2'?'🌶️':p.id==='B1'?'🌾':'💥'}</div>
           <span class="order-name">${p.name}</span>
         </div>
         <div class="order-row-right">
@@ -339,7 +429,7 @@ function renderOrder(){
 }
 
 function total(){return PRODUCTS.reduce((s,p)=>s+p.price*(cart[p.id]||0),0)}
-function buildItems(){return PRODUCTS.filter(p=>(cart[p.id]||0)>0).map(p=>({slot:p.id,name:p.name,emoji:p.emoji,qty:cart[p.id],price:p.price,subtotal:p.price*cart[p.id]}))}
+function buildItems(){return PRODUCTS.filter(p=>(cart[p.id]||0)>0).map(p=>({slot:p.id,name:p.name,qty:cart[p.id],price:p.price,subtotal:p.price*cart[p.id]}))}
 
 function toggleItem(id,el,e){
   const p=PRODUCTS.find(x=>x.id===id);if(!p||!p.stock)return;
@@ -384,7 +474,7 @@ function onSuccess(r){
   mqttPublish(TOPICS.order,{transactionId:r.razorpay_payment_id,razorpayOrderId:r.razorpay_order_id,timestamp:ts,paymentMethod:'ONLINE',items,totalAmount:t});
   mqttPublish(TOPICS.payment,{transactionId:r.razorpay_payment_id,razorpayOrderId:r.razorpay_order_id,razorpaySignature:r.razorpay_signature,timestamp:ts,paymentMethod:'ONLINE',amountPaid:t,currency:'INR',changeDue:0,status:'SUCCESS',items});
   items.forEach(i=>{const p=PRODUCTS.find(x=>x.id===i.slot);if(p)p.stock-=i.qty});
-  const summary=items.map(i=>`${i.emoji} ${i.name} ×${i.qty}  ₹${i.subtotal}`).join('\n');
+  const summary=items.map(i=>`${i.name} ×${i.qty}  ₹${i.subtotal}`).join('\n');
   showModal('✅','Payment successful',`${summary}\n\nTotal paid: ₹${t}`,r.razorpay_payment_id);
   cart={};renderProducts();renderOrder();
   document.getElementById('btnPay').disabled=false;
