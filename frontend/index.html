@@ -193,6 +193,32 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);min-height:1
   transition:background 0.18s,transform 0.12s;
 }
 .modal-close:hover{background:var(--accent-dark);transform:translateY(-1px)}
+.item-row{
+  display:flex;
+  gap:12px;
+  padding:12px;
+  align-items:center;
+}
+
+.item-img-wrap{
+  width:110px;
+  height:110px;
+  flex-shrink:0;
+  border-radius:10px;
+  overflow:hidden;
+  background:#f3f4f6;
+}
+
+.item-img-wrap img{
+  width:100%;
+  height:100%;
+  object-fit:cover;
+}
+
+.item-body{
+  flex:1;
+  padding:0;
+}
 
 @media(max-width:720px){
   .layout{grid-template-columns:1fr}
@@ -371,26 +397,36 @@ function imgHTML(p, cls, style=''){
 function renderProducts(){
   document.getElementById('itemsGrid').innerHTML=PRODUCTS.map(p=>{
     const qty=cart[p.id]||0,sel=qty>0,noSt=p.stock===0,lowSt=p.stock<=2&&!noSt;
+
     return `
     <div class="item-card ${sel?'selected':''}" id="card_${p.id}"
          onclick="${noSt?'':(`toggleItem('${p.id}',this,event)`)}"
          style="${noSt?'opacity:.35;cursor:not-allowed;pointer-events:none':''}">
-      
-      <div class="item-img-wrap">
-        <img src="${p.img}" 
-             alt="${p.name}"
-             onerror="this.src='${p.fallbackImg}'">
-      </div>
 
-      <div class="item-body">
-        <div class="item-header">
-          <span class="item-badge">${p.id}</span>
-          <div class="item-sel-indicator">✓</div>
+      <div class="item-row">
+
+        <!-- IMAGE LEFT -->
+        <div class="item-img-wrap">
+          <img src="${p.img}" 
+               alt="${p.name}"
+               onerror="this.src='${p.fallbackImg}'">
         </div>
-        <div class="item-name">${p.name}</div>
-        <div style="font-size:0.65rem;color:var(--muted);margin-bottom:4px">${p.tag}</div>
-        <div class="item-price"><sup>₹</sup>${p.price}</div>
-        <div class="item-stock ${lowSt?'low':''}">${noSt?'Out of stock':p.stock+' in stock'}</div>
+
+        <!-- TEXT RIGHT -->
+        <div class="item-body">
+          <div class="item-header">
+            <span class="item-badge">${p.id}</span>
+            <div class="item-sel-indicator">✓</div>
+          </div>
+
+          <div class="item-name">${p.name}</div>
+          <div style="font-size:0.65rem;color:var(--muted);margin-bottom:4px">${p.tag}</div>
+          <div class="item-price"><sup>₹</sup>${p.price}</div>
+          <div class="item-stock ${lowSt?'low':''}">
+            ${noSt?'Out of stock':p.stock+' in stock'}
+          </div>
+        </div>
+
       </div>
 
       <div class="qty-row">
@@ -402,7 +438,6 @@ function renderProducts(){
     </div>`;
   }).join('');
 }
-
 function renderOrder(){
   const listEl=document.getElementById('orderList'),
         tBar=document.getElementById('totalBar'),
