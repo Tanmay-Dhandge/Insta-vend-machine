@@ -44,6 +44,7 @@ body {
   overflow-x: hidden;
 }
 
+/* Ambient background */
 body::before {
   content: '';
   position: fixed;
@@ -73,6 +74,7 @@ body::after {
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: var(--border-hi); border-radius: 2px; }
 
+/* ─── HEADER ─── */
 .header {
   display: flex;
   align-items: center;
@@ -138,6 +140,7 @@ body::after {
   letter-spacing: 1.5px;
 }
 
+/* ─── LAYOUT ─── */
 .layout {
   display: grid;
   grid-template-columns: 1fr 340px;
@@ -158,6 +161,7 @@ body::after {
   gap: 16px;
 }
 
+/* ─── SECTION LABEL ─── */
 .label {
   font-family: var(--font-head);
   font-size: 0.52rem;
@@ -177,6 +181,7 @@ body::after {
   background: linear-gradient(90deg, var(--border-hi), transparent);
 }
 
+/* ─── PRODUCT GRID ─── */
 .items-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
@@ -327,6 +332,7 @@ body::after {
   text-align: center;
 }
 
+/* ─── PAY BUTTON ─── */
 .pay-block {
   margin-top: 8px;
 }
@@ -377,6 +383,7 @@ body::after {
   letter-spacing: 1px;
 }
 
+/* ─── RIGHT PANEL ─── */
 .panel-box {
   background: var(--card);
   border: 1px solid var(--border);
@@ -500,6 +507,7 @@ body::after {
   text-shadow: 0 0 20px var(--accent-glow);
 }
 
+/* ─── LOG ─── */
 .log-feed {
   max-height: 160px;
   overflow-y: auto;
@@ -519,6 +527,7 @@ body::after {
 .log-info { color: var(--muted2); }
 .log-err  { color: var(--red); }
 
+/* ─── CANCEL ─── */
 .btn-cancel {
   width: 100%;
   padding: 12px;
@@ -534,6 +543,7 @@ body::after {
 }
 .btn-cancel:hover { border-color: var(--red); color: var(--red); background: rgba(255,85,119,0.06); }
 
+/* ─── OVERLAY ─── */
 .overlay {
   position: fixed; inset: 0; z-index: 8000;
   background: rgba(7,8,16,0.9);
@@ -600,6 +610,7 @@ body::after {
 }
 .modal-close:hover { opacity: 0.85; transform: translateY(-1px); }
 
+/* ─── RESPONSIVE ─── */
 @media (max-width: 720px) {
   .layout { grid-template-columns: 1fr; }
   .left { padding: 28px 20px; }
@@ -624,7 +635,9 @@ body::after {
 
 <div class="layout">
 
+  <!-- ═══ LEFT ═══ -->
   <div class="left">
+
     <div class="label">Choose Your Items</div>
     <div class="items-grid" id="itemsGrid"></div>
 
@@ -635,9 +648,12 @@ body::after {
       </button>
       <div class="pay-note">Secured by Razorpay &nbsp;·&nbsp; UPI / Cards / Netbanking</div>
     </div>
+
   </div>
 
+  <!-- ═══ RIGHT ═══ -->
   <div class="right">
+
     <div class="panel-box">
       <div class="label" style="margin-bottom:14px">Your Order</div>
       <div id="orderList"><div class="order-empty">No items selected</div></div>
@@ -653,10 +669,12 @@ body::after {
       <div class="label" style="margin-bottom:10px">Activity Log</div>
       <div class="log-feed" id="logFeed"></div>
     </div>
+
   </div>
 
 </div>
 
+<!-- ═══ SUCCESS OVERLAY ═══ -->
 <div class="overlay" id="overlay">
   <div class="modal">
     <span class="modal-icon" id="modalIcon">✅</span>
@@ -841,11 +859,6 @@ async function payWithRazorpay() {
     }
     log('Order created: '+data.order_id,'ok');
 
-    // FIX: Snapshot cart BEFORE opening Razorpay so it's available in the handler
-    // even after cart is cleared
-    const snapshotItems = buildItemsList();
-    const snapshotTotal = t;
-
     const rzp = new window.Razorpay({
       key: data.key,
       order_id: data.order_id,
@@ -857,8 +870,8 @@ async function payWithRazorpay() {
       theme: { color: '#7c6fff' },
       handler: function(response) {
         log('Payment success: '+response.razorpay_payment_id,'ok');
-        // FIX: pass snapshots so cart state is preserved through the async handler
-        onPaymentSuccess(response, snapshotItems, snapshotTotal);
+        onPaymentSuccess(response);
+        sendBackendVerification(response);
       },
       modal: {
         ondismiss: function() {
@@ -878,9 +891,9 @@ async function payWithRazorpay() {
   }
 }
 
-// FIX: Accept snapshotItems and snapshotTotal as parameters instead of reading
-// from cart (which may have been cleared or mutated by the time this runs)
-function onPaymentSuccess(response, items, t) {
+function onPaymentSuccess(response) {
+  const t = total();
+  const items = buildItemsList();
   const ts = new Date().toISOString();
 
   mqttPublish(TOPICS.order, {
@@ -896,36 +909,28 @@ function onPaymentSuccess(response, items, t) {
     amountPaid:t, currency:'INR', changeDue:0, status:'SUCCESS', items
   });
 
-  // Decrement local stock display
   items.forEach(i => {
     const p = PRODUCTS.find(x=>x.id===i.slot);
-    if (p) p.stock = Math.max(0, p.stock - i.qty);
+    if (p) p.stock -= i.qty;
   });
 
   const summary = items.map(i=>`${i.emoji} ${i.name} ×${i.qty}  ₹${i.subtotal}`).join('\n');
   showModal('✅','PAYMENT SUCCESS',`${summary}\n\nTotal Paid: ₹${t}`, response.razorpay_payment_id);
-
-  // FIX: Send verification BEFORE clearing cart so items/totalAmount are intact
-  sendBackendVerification(response, items, t);
 
   cart = {};
   renderProducts(); renderOrder();
   document.getElementById('btnPay').disabled = false;
 }
 
-// FIX: Accept items and totalAmount so the backend can save the transaction
-// and decrement stock correctly
-async function sendBackendVerification(response, items, totalAmount) {
+async function sendBackendVerification(response) {
   try {
     const res = await fetch('https://tmkc-sarvadnya.onrender.com/api/verify-payment', {
       method:'POST',
       headers:{'Content-Type':'application/json'},
       body:JSON.stringify({
-        razorpay_order_id:  response.razorpay_order_id,
+        razorpay_order_id: response.razorpay_order_id,
         razorpay_payment_id: response.razorpay_payment_id,
-        razorpay_signature:  response.razorpay_signature,
-        items,        // FIX: now included
-        totalAmount,  // FIX: now included
+        razorpay_signature: response.razorpay_signature,
       })
     });
     const data = await res.json();
