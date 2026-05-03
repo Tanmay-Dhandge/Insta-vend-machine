@@ -6,145 +6,297 @@
 <title>VendBot 3000</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/mqtt/4.3.7/mqtt.min.js"></script>
 <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet"/>
+
 <style>
-*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-:root{
-  --bg:#F7F8FA;--surface:#FFFFFF;--card:#FFFFFF;--border:#E2E5EA;
-  --border-focus:#4A6CF7;--text:#1A1D23;--muted:#6B7280;--muted2:#9CA3AF;
-  --accent:#4A6CF7;--accent-light:#EEF2FF;--accent-dark:#3451C7;
-  --green:#16A34A;--red:#DC2626;--amber:#D97706;
-  --radius:12px;--radius-sm:8px;--radius-xs:6px;
-  --font:'Inter',system-ui,sans-serif;
-  --shadow-sm:0 1px 3px rgba(0,0,0,0.08),0 1px 2px rgba(0,0,0,0.04);
-  --shadow-md:0 4px 12px rgba(0,0,0,0.08),0 2px 4px rgba(0,0,0,0.04);
-  --shadow-focus:0 0 0 3px rgba(74,108,247,0.15);
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg:          #070810;
+  --surface:     #0e0f1c;
+  --card:        #13142a;
+  --card-hi:     #181935;
+  --border:      rgba(255,255,255,0.06);
+  --border-hi:   rgba(120,100,255,0.4);
+  --text:        #f0f0f8;
+  --muted:       #4a4a6a;
+  --muted2:      #7a7a9a;
+  --accent:      #7c6fff;
+  --accent2:     #a88cff;
+  --accent-glow: rgba(124,111,255,0.35);
+  --green:       #22d3a0;
+  --green-glow:  rgba(34,211,160,0.3);
+  --red:         #ff5577;
+  --amber:       #ffc14d;
+  --radius:      16px;
+  --radius-sm:   10px;
+  --font-head:   'Syne', sans-serif;
+  --font-mono:   'DM Mono', monospace;
 }
-html{font-size:16px}
-body{background:var(--bg);color:var(--text);font-family:var(--font);min-height:100vh;overflow-x:hidden;line-height:1.5}
-::-webkit-scrollbar{width:4px}
-::-webkit-scrollbar-track{background:transparent}
-::-webkit-scrollbar-thumb{background:var(--border);border-radius:4px}
 
-.header{display:flex;align-items:center;justify-content:space-between;padding:0 32px;height:60px;background:var(--surface);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:100}
-.logo{font-size:1rem;font-weight:700;color:var(--text);letter-spacing:-0.3px}
-.logo em{font-style:normal;color:var(--accent)}
-.header-right{display:flex;align-items:center;gap:20px}
-.conn-badge{display:flex;align-items:center;gap:6px;font-size:0.75rem;color:var(--muted);font-weight:500}
-.conn-dot{width:7px;height:7px;border-radius:50%;background:var(--muted2);flex-shrink:0;transition:background 0.3s}
-.conn-dot.live{background:var(--green)}
-.conn-dot.err{background:var(--red)}
-.clock{font-size:0.75rem;color:var(--muted);font-variant-numeric:tabular-nums;font-weight:500}
+html { font-size: 16px; }
 
-.layout{display:grid;grid-template-columns:1fr 320px;min-height:calc(100vh - 60px)}
-.left{padding:28px 32px}
-.right{padding:24px 20px;background:var(--surface);border-left:1px solid var(--border);display:flex;flex-direction:column;gap:14px}
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-mono);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
 
-.section-label{font-size:0.7rem;font-weight:600;letter-spacing:0.08em;color:var(--muted);text-transform:uppercase;margin-bottom:16px}
+body::before {
+  content: '';
+  position: fixed;
+  top: -30%; left: -20%;
+  width: 70vw; height: 70vh;
+  background: radial-gradient(ellipse, rgba(124,111,255,0.06) 0%, transparent 70%);
+  pointer-events: none; z-index: 0;
+}
+body::after {
+  content: '';
+  position: fixed;
+  bottom: -20%; right: -10%;
+  width: 50vw; height: 50vh;
+  background: radial-gradient(ellipse, rgba(34,211,160,0.04) 0%, transparent 70%);
+  pointer-events: none; z-index: 0;
+}
 
-.items-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-bottom:36px}
+* { position: relative; z-index: 1; }
 
-.item-card{background:var(--card);border:1.5px solid var(--border);border-radius:var(--radius);padding:0 0 16px;cursor:pointer;user-select:none;overflow:hidden;transition:border-color 0.18s,box-shadow 0.18s,background 0.18s;box-shadow:var(--shadow-sm)}
-.item-card:hover{border-color:#CBD0E8;box-shadow:var(--shadow-md)}
-.item-card:active{transform:scale(0.99)}
-.item-card.selected{border-color:var(--accent);background:var(--accent-light);box-shadow:var(--shadow-focus),var(--shadow-sm)}
+::-webkit-scrollbar { width: 3px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border-hi); border-radius: 2px; }
 
-.item-row{display:flex;gap:12px;padding:12px;align-items:center}
-.item-img-wrap{width:110px;height:110px;flex-shrink:0;border-radius:10px;overflow:hidden;background:#f3f4f6}
-.item-img-wrap img{width:100%;height:100%;object-fit:cover;transition:transform 0.25s}
-.item-card:hover .item-img-wrap img{transform:scale(1.04)}
-.item-body{flex:1;padding:0}
-.item-header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:6px}
-.item-badge{font-size:0.65rem;font-weight:600;color:var(--muted);background:var(--bg);padding:2px 7px;border-radius:20px;border:1px solid var(--border);letter-spacing:0.05em}
-.item-sel-indicator{width:20px;height:20px;border-radius:50%;background:var(--accent);display:flex;align-items:center;justify-content:center;font-size:0.6rem;color:#fff;font-weight:700;opacity:0;transform:scale(0.5);transition:all 0.2s cubic-bezier(0.34,1.56,0.64,1)}
-.item-card.selected .item-sel-indicator{opacity:1;transform:scale(1)}
-.item-name{font-size:0.82rem;font-weight:600;color:var(--text);margin-bottom:4px}
-.item-price{font-size:1.2rem;font-weight:700;color:var(--accent);line-height:1}
-.item-price sup{font-size:0.65rem;vertical-align:super;font-weight:600}
-.item-stock{font-size:0.65rem;color:var(--muted);margin-top:4px}
-.item-stock.low{color:var(--amber)}
+/* ── HEADER ── */
+.header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 36px; height: 64px;
+  background: rgba(13,14,28,0.8);
+  backdrop-filter: blur(20px);
+  border-bottom: 1px solid var(--border);
+  position: sticky; top: 0; z-index: 100;
+}
+.logo {
+  font-family: var(--font-head);
+  font-weight: 800; font-size: 1.05rem;
+  letter-spacing: 4px; color: var(--text);
+}
+.logo em { font-style: normal; color: var(--accent); text-shadow: 0 0 20px var(--accent-glow); }
+.header-right { display: flex; align-items: center; gap: 24px; }
+.conn-badge {
+  display: flex; align-items: center; gap: 8px;
+  font-size: 0.62rem; letter-spacing: 2px;
+  color: var(--muted2); text-transform: uppercase;
+}
+.conn-dot {
+  width: 7px; height: 7px; border-radius: 50%;
+  background: var(--muted); flex-shrink: 0; transition: all 0.4s;
+}
+.conn-dot.live { background: var(--green); box-shadow: 0 0 10px var(--green); animation: pulse 2.4s ease-in-out infinite; }
+.conn-dot.err  { background: var(--red); box-shadow: 0 0 8px var(--red); }
+@keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.4;transform:scale(0.7)} }
+.clock { font-size: 0.68rem; color: var(--muted); letter-spacing: 1.5px; }
 
-.qty-row{display:none;align-items:center;gap:8px;margin:10px 14px 0;padding-top:10px;border-top:1px solid var(--border)}
-.item-card.selected .qty-row{display:flex}
-.qty-btn{width:26px;height:26px;border-radius:var(--radius-xs);background:var(--surface);border:1px solid var(--border);color:var(--text);font-size:1rem;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background 0.15s,border-color 0.15s;font-family:var(--font)}
-.qty-btn:hover{background:var(--accent-light);border-color:var(--accent);color:var(--accent)}
-.qty-btn:active{transform:scale(0.92)}
-.qty-val{font-size:0.82rem;font-weight:700;color:var(--accent);min-width:20px;text-align:center}
+/* ── LAYOUT ── */
+.layout { display: grid; grid-template-columns: 1fr 340px; min-height: calc(100vh - 64px); }
+.left  { padding: 40px 36px; }
+.right { padding: 32px 24px; background: rgba(14,15,28,0.6); border-left: 1px solid var(--border); display: flex; flex-direction: column; gap: 16px; }
 
-.pay-block{margin-top:4px}
-.btn-pay{width:100%;padding:15px;border:none;border-radius:var(--radius);background:var(--accent);color:#fff;font-family:var(--font);font-size:0.85rem;font-weight:600;cursor:pointer;transition:background 0.18s,transform 0.12s,box-shadow 0.18s;box-shadow:0 2px 8px rgba(74,108,247,0.3);position:relative;overflow:hidden}
-.btn-pay:hover:not(:disabled){background:var(--accent-dark);box-shadow:0 4px 16px rgba(74,108,247,0.4);transform:translateY(-1px)}
-.btn-pay:active:not(:disabled){transform:translateY(0) scale(0.99)}
-.btn-pay:disabled{background:var(--border);color:var(--muted2);box-shadow:none;cursor:not-allowed}
-.btn-pay.prefetching::after{content:'';position:absolute;bottom:0;left:0;height:2px;background:rgba(255,255,255,0.5);animation:prefetch-bar 2s ease-in-out infinite}
-@keyframes prefetch-bar{0%{width:0;left:0}50%{width:60%;left:20%}100%{width:0;left:100%}}
-.btn-pay.ready::before{content:'⚡';position:absolute;right:14px;top:50%;transform:translateY(-50%);font-size:0.8rem}
-.pay-note{text-align:center;font-size:0.67rem;color:var(--muted);margin-top:8px}
-.pay-status{text-align:center;font-size:0.67rem;margin-top:4px;height:14px;transition:opacity 0.3s}
-.pay-status.ready{color:var(--green)}
-.pay-status.fetching{color:var(--amber)}
+.label {
+  font-family: var(--font-head);
+  font-size: 0.52rem; font-weight: 700;
+  letter-spacing: 5px; color: var(--muted);
+  text-transform: uppercase; margin-bottom: 20px;
+  display: flex; align-items: center; gap: 12px;
+}
+.label::after { content:''; flex:1; height:1px; background: linear-gradient(90deg, var(--border-hi), transparent); }
 
-.panel-box{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:18px;box-shadow:var(--shadow-sm)}
+/* ── ITEMS GRID ── */
+.items-grid { display: grid; grid-template-columns: repeat(2,1fr); gap: 14px; margin-bottom: 50px; }
 
-.order-empty{font-size:0.75rem;color:var(--muted2);text-align:center;padding:12px 0}
-.order-row{display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border);gap:8px}
-.order-row:last-of-type{border-bottom:none}
-.order-row-left{display:flex;align-items:center;gap:8px;flex:1;min-width:0}
-/* Photo thumbnail in order panel */
-.order-thumb{width:40px;height:40px;border-radius:8px;object-fit:cover;flex-shrink:0;background:#f3f4f6;border:1px solid var(--border)}
-.order-thumb-placeholder{width:40px;height:40px;border-radius:8px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:1.2rem;border:1px solid var(--border)}
-.order-name{font-size:0.75rem;color:var(--text);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.order-row-right{display:flex;align-items:center;gap:6px;flex-shrink:0}
-.oqty{display:flex;align-items:center;gap:4px;background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-xs);padding:2px 4px}
-.oqty-btn{width:20px;height:20px;border-radius:4px;background:none;border:none;color:var(--muted);font-size:0.85rem;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:color 0.15s;font-family:var(--font)}
-.oqty-btn:hover{color:var(--accent)}
-.oqty-val{font-size:0.7rem;font-weight:700;color:var(--text);min-width:14px;text-align:center}
-.order-price{font-size:0.78rem;font-weight:700;color:var(--text);white-space:nowrap}
-.row-remove{background:none;border:none;color:var(--muted2);font-size:0.65rem;cursor:pointer;padding:2px 4px;transition:color 0.15s;font-family:var(--font)}
-.row-remove:hover{color:var(--red)}
+.item-card {
+  background: var(--card);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius);
+  cursor: pointer;
+  overflow: hidden;
+  transition: all 0.25s cubic-bezier(0.34,1.56,0.64,1);
+  user-select: none;
+}
+.item-card::before {
+  content: ''; position: absolute; inset: 0;
+  background: linear-gradient(135deg, rgba(124,111,255,0.08), rgba(168,140,255,0.04));
+  opacity: 0; transition: opacity 0.25s;
+}
+.item-card:hover::before { opacity: 1; }
+.item-card:hover {
+  border-color: rgba(124,111,255,0.5);
+  transform: translateY(-4px);
+  box-shadow: 0 12px 40px rgba(0,0,0,0.5), 0 0 0 1px rgba(124,111,255,0.2);
+}
+.item-card.selected {
+  border-color: var(--accent);
+  background: var(--card-hi);
+  box-shadow: 0 0 0 1px var(--accent), 0 12px 40px rgba(124,111,255,0.15);
+}
+.item-card.selected::before { opacity: 1; }
 
-.total-bar{display:flex;justify-content:space-between;align-items:center;margin-top:14px;padding-top:12px;border-top:1.5px solid var(--border)}
-.total-label{font-size:0.7rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em}
-.total-amount{font-size:1.3rem;font-weight:700;color:var(--text)}
+/* image area */
+.item-img-wrap {
+  width: 100%; height: 160px;
+  overflow: hidden;
+  background: #0d0e1e;
+  display: flex; align-items: center; justify-content: center;
+}
+.item-img-wrap img {
+  width: 100%; height: 100%;
+  object-fit: cover; object-position: center;
+  display: block;
+  transition: transform 0.3s;
+}
+.item-card:hover .item-img-wrap img { transform: scale(1.05); }
 
-.log-feed{max-height:160px;overflow-y:auto;display:flex;flex-direction:column;gap:1px}
-.log-line{font-size:0.67rem;line-height:1.7;display:flex;gap:8px;padding:1px 0}
-.log-ts{color:var(--muted2);flex-shrink:0;font-variant-numeric:tabular-nums}
-.log-ok{color:var(--green)}
-.log-info{color:var(--muted)}
-.log-err{color:var(--red)}
+/* body below image */
+.item-body { padding: 14px 16px 16px; }
 
-.btn-cancel{width:100%;padding:10px;border:1px solid var(--border);border-radius:var(--radius-sm);background:transparent;color:var(--muted);font-family:var(--font);font-size:0.75rem;cursor:pointer;transition:all 0.18s;font-weight:500}
-.btn-cancel:hover{border-color:var(--red);color:var(--red);background:#FFF5F5}
+.item-header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 8px; }
+.item-badge {
+  font-size: 0.55rem; letter-spacing: 2px; color: var(--muted);
+  background: rgba(255,255,255,0.04);
+  padding: 2px 7px; border-radius: 20px; border: 1px solid var(--border);
+}
+.item-check {
+  width: 22px; height: 22px; border-radius: 50%;
+  background: var(--accent);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 0.6rem; color: #fff; font-weight: bold;
+  opacity: 0; transform: scale(0.4) rotate(-30deg);
+  transition: all 0.25s cubic-bezier(0.34,1.56,0.64,1);
+  box-shadow: 0 0 12px var(--accent-glow);
+}
+.item-card.selected .item-check { opacity: 1; transform: scale(1) rotate(0deg); }
 
-.overlay{position:fixed;inset:0;z-index:8000;background:rgba(15,17,25,0.6);backdrop-filter:blur(8px);display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity 0.25s}
-.overlay.show{opacity:1;pointer-events:all}
-.modal{background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:40px 36px;max-width:380px;width:90%;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,0.15),0 4px 16px rgba(0,0,0,0.08);transform:translateY(20px) scale(0.95);transition:transform 0.3s cubic-bezier(0.34,1.56,0.64,1)}
-.overlay.show .modal{transform:translateY(0) scale(1)}
-.modal-icon{font-size:3rem;display:block;margin-bottom:14px}
-.modal-title{font-size:1rem;font-weight:700;color:var(--text);margin-bottom:10px;letter-spacing:-0.2px}
-.modal-body{font-size:0.78rem;line-height:1.9;color:var(--muted);margin-bottom:16px;white-space:pre-line}
-.modal-txn{font-size:0.65rem;color:var(--muted2);margin-bottom:24px;letter-spacing:0.05em;padding:5px 12px;background:var(--bg);border-radius:var(--radius-xs);border:1px solid var(--border);display:inline-block}
-.modal-close{background:var(--accent);color:#fff;border:none;padding:12px 36px;border-radius:var(--radius-sm);font-family:var(--font);font-size:0.82rem;font-weight:600;cursor:pointer;transition:background 0.18s,transform 0.12s}
-.modal-close:hover{background:var(--accent-dark);transform:translateY(-1px)}
+.item-name {
+  font-family: var(--font-head);
+  font-size: 0.78rem; font-weight: 700;
+  letter-spacing: 1px; color: var(--text); margin-bottom: 4px;
+}
+.item-tag { font-size: 0.6rem; color: var(--muted); margin-bottom: 8px; }
+.item-price {
+  font-family: var(--font-head);
+  font-size: 1.3rem; font-weight: 800;
+  color: var(--accent2); line-height: 1;
+}
+.item-price sup { font-size: 0.6rem; font-weight: 600; vertical-align: super; opacity: 0.7; }
+.item-stock { font-size: 0.58rem; color: var(--muted); margin-top: 6px; letter-spacing: 1px; }
+.item-stock.low { color: var(--amber); }
 
-@media(max-width:720px){
-  .layout{grid-template-columns:1fr}
-  .left{padding:20px 16px}
-  .right{border-left:none;border-top:1px solid var(--border);padding:20px 16px}
-  .header{padding:0 16px}
-  .item-img-wrap{width:80px;height:80px}
+/* qty row */
+.qty-row { display: none; align-items: center; gap: 8px; margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border); }
+.item-card.selected .qty-row { display: flex; }
+.qty-btn {
+  width: 28px; height: 28px; border-radius: 8px;
+  background: rgba(124,111,255,0.12); border: 1px solid rgba(124,111,255,0.2);
+  color: var(--accent2); font-size: 1rem; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: all 0.15s; font-family: var(--font-mono);
+}
+.qty-btn:hover { background: rgba(124,111,255,0.25); border-color: var(--accent); transform: scale(1.05); }
+.qty-val { font-family: var(--font-head); font-size: 0.78rem; font-weight: 800; color: var(--accent); min-width: 22px; text-align: center; }
+
+/* ── PAY ── */
+.pay-block { margin-top: 8px; }
+.btn-pay {
+  width: 100%; padding: 18px; border: none; border-radius: var(--radius);
+  background: linear-gradient(135deg, #7c6fff 0%, #a88cff 50%, #c47aff 100%);
+  color: #fff; font-family: var(--font-head);
+  font-size: 0.82rem; font-weight: 800; letter-spacing: 3px;
+  cursor: pointer; transition: all 0.25s; position: relative; overflow: hidden;
+  box-shadow: 0 4px 24px rgba(124,111,255,0.3);
+}
+.btn-pay::before {
+  content: ''; position: absolute; inset: 0;
+  background: linear-gradient(135deg, rgba(255,255,255,0.15), transparent);
+  opacity: 0; transition: opacity 0.2s;
+}
+.btn-pay:hover:not(:disabled)::before { opacity: 1; }
+.btn-pay:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 8px 32px rgba(124,111,255,0.5); }
+.btn-pay:active:not(:disabled) { transform: translateY(0); }
+.btn-pay:disabled { background: var(--card); color: var(--muted); border: 1px solid var(--border); box-shadow: none; cursor: not-allowed; }
+.btn-pay.prefetching::after {
+  content: ''; position: absolute; bottom: 0; left: 0;
+  height: 2px; background: rgba(255,255,255,0.5);
+  animation: prefetch-bar 2s ease-in-out infinite;
+}
+@keyframes prefetch-bar { 0%{width:0;left:0} 50%{width:60%;left:20%} 100%{width:0;left:100%} }
+.btn-pay.ready::after { content:'⚡'; position:absolute; right:14px; top:50%; transform:translateY(-50%); font-size:0.8rem; }
+.pay-note { text-align: center; font-size: 0.58rem; color: var(--muted); margin-top: 10px; letter-spacing: 1px; }
+.pay-status { text-align: center; font-size: 0.62rem; margin-top: 6px; height: 14px; transition: opacity 0.3s; }
+.pay-status.ready   { color: var(--green); }
+.pay-status.fetching{ color: var(--amber); }
+
+/* ── RIGHT PANEL ── */
+.panel-box { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; }
+.order-empty { font-size: 0.72rem; color: var(--muted); text-align: center; padding: 16px 0; letter-spacing: 1px; }
+
+.order-row { display: flex; align-items: center; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid var(--border); gap: 8px; }
+.order-row:last-of-type { border-bottom: none; }
+.order-row-left { display: flex; align-items: center; gap: 10px; flex: 1; min-width: 0; }
+.order-thumb { width: 40px; height: 40px; border-radius: 8px; object-fit: cover; flex-shrink: 0; background: #0d0e1e; border: 1px solid var(--border); }
+.order-thumb-placeholder { width: 40px; height: 40px; border-radius: 8px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; border: 1px solid var(--border); }
+.order-name { font-size: 0.72rem; color: var(--text); font-family: var(--font-head); font-weight: 700; letter-spacing: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.order-row-right { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+.oqty { display: flex; align-items: center; gap: 5px; background: rgba(124,111,255,0.08); border: 1px solid rgba(124,111,255,0.15); border-radius: 8px; padding: 3px 5px; }
+.oqty-btn { width: 22px; height: 22px; border-radius: 5px; background: none; border: none; color: var(--muted2); font-size: 0.9rem; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.15s; font-family: var(--font-mono); }
+.oqty-btn:hover { color: var(--accent); }
+.oqty-val { font-family: var(--font-head); font-size: 0.7rem; font-weight: 700; color: var(--accent); min-width: 16px; text-align: center; }
+.order-price { font-family: var(--font-head); font-size: 0.78rem; font-weight: 700; color: var(--accent2); white-space: nowrap; }
+.row-remove { background: none; border: none; color: var(--muted); font-size: 0.7rem; cursor: pointer; padding: 2px 4px; transition: color 0.15s; font-family: var(--font-mono); }
+.row-remove:hover { color: var(--red); }
+
+.total-bar { display: flex; justify-content: space-between; align-items: baseline; margin-top: 16px; padding-top: 14px; border-top: 1px solid rgba(124,111,255,0.2); }
+.total-label { font-family: var(--font-head); font-size: 0.58rem; letter-spacing: 4px; color: var(--muted2); }
+.total-amount { font-family: var(--font-head); font-size: 1.5rem; font-weight: 800; color: var(--accent); text-shadow: 0 0 20px var(--accent-glow); }
+
+.log-feed { max-height: 160px; overflow-y: auto; display: flex; flex-direction: column; gap: 2px; }
+.log-line { font-size: 0.6rem; line-height: 1.6; display: flex; gap: 8px; padding: 1px 0; }
+.log-ts  { color: var(--muted); flex-shrink: 0; }
+.log-ok  { color: var(--green); }
+.log-info{ color: var(--muted2); }
+.log-err { color: var(--red); }
+
+.btn-cancel { width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: var(--radius-sm); background: transparent; color: var(--muted2); font-family: var(--font-mono); font-size: 0.68rem; cursor: pointer; transition: all 0.15s; letter-spacing: 1px; }
+.btn-cancel:hover { border-color: var(--red); color: var(--red); background: rgba(255,85,119,0.06); }
+
+/* ── MODAL ── */
+.overlay { position: fixed; inset: 0; z-index: 8000; background: rgba(7,8,16,0.9); backdrop-filter: blur(12px); display: flex; align-items: center; justify-content: center; opacity: 0; pointer-events: none; transition: opacity 0.3s; }
+.overlay.show { opacity: 1; pointer-events: all; }
+.modal { background: var(--surface); border: 1px solid rgba(124,111,255,0.4); border-radius: 22px; padding: 48px 40px; max-width: 380px; width: 90%; text-align: center; box-shadow: 0 0 0 1px rgba(124,111,255,0.1), 0 40px 80px rgba(0,0,0,0.8), 0 0 60px rgba(124,111,255,0.1); transform: translateY(24px) scale(0.94); transition: transform 0.35s cubic-bezier(0.34,1.56,0.64,1); }
+.overlay.show .modal { transform: translateY(0) scale(1); }
+.modal-icon  { font-size: 3.5rem; display: block; margin-bottom: 16px; }
+.modal-title { font-family: var(--font-head); font-size: 1rem; font-weight: 800; letter-spacing: 5px; color: var(--accent2); margin-bottom: 12px; }
+.modal-body  { font-size: 0.73rem; line-height: 2; color: var(--muted2); margin-bottom: 20px; white-space: pre-line; }
+.modal-txn   { font-size: 0.58rem; color: var(--muted); margin-bottom: 24px; letter-spacing: 1.5px; padding: 6px 12px; background: rgba(255,255,255,0.03); border-radius: 6px; border: 1px solid var(--border); display: inline-block; }
+.modal-close { background: linear-gradient(135deg,#7c6fff,#a88cff); color: #fff; border: none; padding: 13px 36px; border-radius: 10px; font-family: var(--font-head); font-size: 0.72rem; font-weight: 800; letter-spacing: 3px; cursor: pointer; transition: all 0.2s; box-shadow: 0 4px 20px rgba(124,111,255,0.3); }
+.modal-close:hover { opacity: 0.85; transform: translateY(-1px); }
+
+@media (max-width: 720px) {
+  .layout { grid-template-columns: 1fr; }
+  .left  { padding: 28px 20px; }
+  .right { border-left: none; border-top: 1px solid var(--border); padding: 24px 20px; }
+  .header{ padding: 0 20px; }
+  .item-img-wrap { height: 120px; }
 }
 </style>
 </head>
 <body>
 
 <header class="header">
-  <div class="logo">Vend<em>Bot</em> 3000</div>
+  <div class="logo">VEND<em>BOT</em> <span style="opacity:0.3;font-weight:400">3000</span></div>
   <div class="header-right">
     <div class="conn-badge">
       <div class="conn-dot" id="connDot"></div>
-      <span id="connLabel">Connecting</span>
+      <span id="connLabel">CONNECTING</span>
     </div>
     <div class="clock" id="clock"></div>
   </div>
@@ -152,12 +304,12 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);min-height:1
 
 <div class="layout">
   <div class="left">
-    <div class="section-label">Choose items</div>
+    <div class="label">Choose Your Items</div>
     <div class="items-grid" id="itemsGrid"></div>
     <div class="pay-block">
-      <div class="section-label">Payment</div>
+      <div class="label">Complete Payment</div>
       <button class="btn-pay" id="btnPay" onclick="handlePay(this,event)" disabled>
-        <span id="payLabel">Pay with Razorpay</span>
+        <span id="payLabel">💳 &nbsp;Pay with Razorpay</span>
       </button>
       <div class="pay-note">Secured by Razorpay &nbsp;·&nbsp; UPI / Cards / Netbanking</div>
       <div class="pay-status" id="payStatus"></div>
@@ -166,16 +318,16 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);min-height:1
 
   <div class="right">
     <div class="panel-box">
-      <div class="section-label" style="margin-bottom:12px">Your order</div>
+      <div class="label" style="margin-bottom:14px">Your Order</div>
       <div id="orderList"><div class="order-empty">No items selected</div></div>
       <div class="total-bar" id="totalBar" style="display:none">
         <span class="total-label">Total</span>
         <span class="total-amount" id="totalAmt">₹0</span>
       </div>
     </div>
-    <button class="btn-cancel" onclick="cancelAll()">Clear cart</button>
+    <button class="btn-cancel" onclick="cancelAll()">✕ &nbsp;Clear Cart</button>
     <div class="panel-box" style="flex:1">
-      <div class="section-label" style="margin-bottom:10px">Activity log</div>
+      <div class="label" style="margin-bottom:10px">Activity Log</div>
       <div class="log-feed" id="logFeed"></div>
     </div>
   </div>
@@ -184,182 +336,206 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);min-height:1
 <div class="overlay" id="overlay">
   <div class="modal">
     <span class="modal-icon" id="modalIcon">✅</span>
-    <div class="modal-title" id="modalTitle">Order confirmed</div>
+    <div class="modal-title" id="modalTitle">ORDER CONFIRMED</div>
     <div class="modal-body" id="modalBody"></div>
     <div class="modal-txn" id="modalTxn"></div>
-    <button class="modal-close" onclick="closeModal()">Done</button>
+    <button class="modal-close" onclick="closeModal()">DONE</button>
   </div>
 </div>
 
 <script>
-const MQTT_BROKER='wss://366c887e88bf40c496821b5e646d3a12.s1.eu.hivemq.cloud:8884/mqtt';
-const MQTT_USERNAME='hivemq.webclient.1773649961783';
-const MQTT_PASSWORD='FklRd4q@2&7DUc,.AZx6';
-const TOPICS={order:'vendbot/order',payment:'vendbot/payment'};
-const API_BASE='https://tmkc-sarvadnya.onrender.com';
+/* ─── CONFIG ─── */
+const MQTT_BROKER   = 'wss://366c887e88bf40c496821b5e646d3a12.s1.eu.hivemq.cloud:8884/mqtt';
+const MQTT_USERNAME = 'hivemq.webclient.1773649961783';
+const MQTT_PASSWORD = 'FklRd4q@2&7DUc,.AZx6';
+const TOPICS        = { order:'vendbot/order', payment:'vendbot/payment' };
+const API_BASE      = 'https://tmkc-sarvadnya.onrender.com';
 
-const PRODUCTS=[
-  {id:'A1',name:'Khatta Meetha',img:'Khatta Mitha Mix.png',fallbackImg:'https://images.jdmagicbox.com/quickquotes/images_main/balaji-khatta-meetha-namkeen-2216297604-h3y2l.jpg',price:1,stock:4,tag:'Tangy & Sweet'},
-  {id:'A2',name:'Tikha Meetha',img:'Tikha Mitha Mix.png',fallbackImg:'https://images.jdmagicbox.com/quickquotes/images_main/balaji-tikha-meetha-namkeen-2216297604-h3y2l.jpg',price:1,stock:4,tag:'Spicy & Sweet'},
-  {id:'B1',name:'Farali Chiwda',img:'Farali Chevda.png',fallbackImg:'https://5.imimg.com/data5/SELLER/Default/2021/8/WF/KT/WS/135395934/balaji-farali-chevdo.jpg',price:1,stock:4,tag:'Light & Crispy'},
-  {id:'B2',name:'Chataka Pataka',img:'Chataka Pataka.png',fallbackImg:'https://5.imimg.com/data5/SELLER/Default/2021/8/LB/BI/RQ/135395934/balaji-chataka-pataka.jpg',price:1,stock:4,tag:'Masala Masti'},
+/* ─── PRODUCTS — Indian snacks with local images ─── */
+const PRODUCTS = [
+  {
+    id:'A1', name:'Khatta Meetha',
+    img:'Khatta Mitha Mix.png',
+    fallbackImg:'https://images.jdmagicbox.com/quickquotes/images_main/balaji-khatta-meetha-namkeen-2216297604-h3y2l.jpg',
+    price:1, stock:4, tag:'Tangy & Sweet'
+  },
+  {
+    id:'A2', name:'Tikha Meetha',
+    img:'Tikha Mitha Mix.png',
+    fallbackImg:'https://images.jdmagicbox.com/quickquotes/images_main/balaji-tikha-meetha-namkeen-2216297604-h3y2l.jpg',
+    price:1, stock:4, tag:'Spicy & Sweet'
+  },
+  {
+    id:'B1', name:'Farali Chiwda',
+    img:'Farali Chevda.png',
+    fallbackImg:'https://5.imimg.com/data5/SELLER/Default/2021/8/WF/KT/WS/135395934/balaji-farali-chevdo.jpg',
+    price:1, stock:4, tag:'Light & Crispy'
+  },
+  {
+    id:'B2', name:'Chataka Pataka',
+    img:'Chataka Pataka.png',
+    fallbackImg:'https://5.imimg.com/data5/SELLER/Default/2021/8/LB/BI/RQ/135395934/balaji-chataka-pataka.jpg',
+    price:1, stock:4, tag:'Masala Masti'
+  },
 ];
 
-const PRODUCT_COLORS={'A1':'#7EC8B0','A2':'#F4A261','B1':'#F7D060','B2':'#E76F51'};
-const PRODUCT_EMOJIS={'A1':'🌿','A2':'🌶️','B1':'🌾','B2':'💥'};
+const PRODUCT_COLORS = { A1:'#7EC8B0', A2:'#F4A261', B1:'#F7D060', B2:'#E76F51' };
+const PRODUCT_EMOJIS = { A1:'🌿', A2:'🌶️', B1:'🌾', B2:'💥' };
 
-let cart={},client=null;
+/* ─── STATE ─── */
+let cart = {}, client = null;
 
-// ─── PRE-FETCH STATE ──────────────────────────────────────────────────────────
-let prefetchedOrder=null;   // {order_id, key, amount, currency} — cached for instant use
-let prefetchTimer=null;     // debounce timer
-let isFetching=false;
+/* ─── PRE-FETCH STATE ─── */
+let prefetchedOrder = null;
+let prefetchTimer   = null;
+let isFetching      = false;
 
-// Warm the backend immediately on load (Render free tier cold-start prevention)
-function warmBackend(){
-  fetch(API_BASE+'/api/create-order',{
-    method:'POST',
-    headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({amount:1}),
-    signal:AbortSignal.timeout(8000)
-  }).then(r=>r.json()).then(d=>{
-    // Cache first warm-up order if cart already has items
-    if(total()>0&&d.order_id){
-      prefetchedOrder=d;
-      setPayReady();
-    }
-    log('Backend warm','ok');
-  }).catch(()=>log('Warm-up skipped (offline?)','info'));
+/* ─── BACKEND WARM-UP (Render cold-start prevention) ─── */
+function warmBackend() {
+  fetch(API_BASE + '/api/create-order', {
+    method: 'POST',
+    headers: { 'Content-Type':'application/json' },
+    body: JSON.stringify({ amount:1 }),
+    signal: AbortSignal.timeout(8000)
+  }).then(r => r.json()).then(d => {
+    if (total() > 0 && d.order_id) { prefetchedOrder = d; setPayReady(); }
+    log('Backend warm', 'ok');
+  }).catch(() => log('Warm-up skipped (offline?)', 'info'));
 }
 
-// Debounced pre-fetch — fires 600ms after last cart change
-function schedulePrefetch(){
-  prefetchedOrder=null;
+/* ─── PRE-FETCH LOGIC ─── */
+function schedulePrefetch() {
+  prefetchedOrder = null;
   clearTimeout(prefetchTimer);
-  setPayStatus('fetching','Preparing payment...');
-  prefetchTimer=setTimeout(doPrefetch,600);
+  setPayStatus('fetching', 'Preparing payment...');
+  prefetchTimer = setTimeout(doPrefetch, 600);
 }
 
-async function doPrefetch(){
-  const t=total();
-  if(!t){prefetchedOrder=null;setPayStatus('','');return}
-  isFetching=true;
-  try{
-    const res=await fetch(API_BASE+'/api/create-order',{
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({amount:t}),
-      signal:AbortSignal.timeout(12000)
+async function doPrefetch() {
+  const t = total();
+  if (!t) { prefetchedOrder = null; setPayStatus('',''); return; }
+  isFetching = true;
+  try {
+    const res = await fetch(API_BASE + '/api/create-order', {
+      method: 'POST',
+      headers: { 'Content-Type':'application/json' },
+      body: JSON.stringify({ amount:t }),
+      signal: AbortSignal.timeout(12000)
     });
-    const d=await res.json();
-    if(d.order_id&&d.key){
-      prefetchedOrder=d;
+    const d = await res.json();
+    if (d.order_id && d.key) {
+      prefetchedOrder = d;
       setPayReady();
-      log('Order pre-fetched: '+d.order_id,'ok');
+      log('Order pre-fetched: ' + d.order_id, 'ok');
     } else {
       setPayStatus('','');
       log('Pre-fetch failed','err');
     }
-  }catch(e){
+  } catch(e) {
     setPayStatus('','');
-    log('Pre-fetch error: '+e.message,'err');
+    log('Pre-fetch error: ' + e.message, 'err');
   }
-  isFetching=false;
+  isFetching = false;
 }
 
-function setPayReady(){
-  const btn=document.getElementById('btnPay');
+function setPayReady() {
+  const btn = document.getElementById('btnPay');
   btn.classList.remove('prefetching');
   btn.classList.add('ready');
-  setPayStatus('ready','⚡ Ready — instant checkout');
+  setPayStatus('ready', '⚡ Ready — instant checkout');
 }
-function setPayStatus(cls,msg){
-  const el=document.getElementById('payStatus');
-  el.className='pay-status'+(cls?' '+cls:'');
-  el.textContent=msg;
-  const btn=document.getElementById('btnPay');
-  if(cls==='fetching'){btn.classList.add('prefetching');btn.classList.remove('ready')}
-  else if(cls!=='ready'){btn.classList.remove('prefetching','ready')}
+function setPayStatus(cls, msg) {
+  const el  = document.getElementById('payStatus');
+  el.className = 'pay-status' + (cls ? ' '+cls : '');
+  el.textContent = msg;
+  const btn = document.getElementById('btnPay');
+  if (cls === 'fetching') { btn.classList.add('prefetching'); btn.classList.remove('ready'); }
+  else if (cls !== 'ready') { btn.classList.remove('prefetching','ready'); }
 }
-// ─────────────────────────────────────────────────────────────────────────────
 
-function mqttConnect(){
+/* ─── MQTT ─── */
+function mqttConnect() {
   log('Connecting to broker...','info');
-  client=mqtt.connect(MQTT_BROKER,{
-    clientId:'vb_'+Math.random().toString(36).slice(2,8),
-    clean:true,reconnectPeriod:4000,
-    username:MQTT_USERNAME,password:MQTT_PASSWORD,
+  client = mqtt.connect(MQTT_BROKER, {
+    clientId: 'vb_' + Math.random().toString(36).slice(2,8),
+    clean: true, reconnectPeriod: 4000,
+    username: MQTT_USERNAME, password: MQTT_PASSWORD,
   });
-  client.on('connect',()=>{setConn('live','Live');log('Connected','ok')});
-  client.on('error',e=>{setConn('err','Error');log('MQTT: '+e.message,'err')});
-  client.on('offline',()=>{setConn('','Offline');log('Offline — retrying...','err')});
+  client.on('connect', () => { setConn('live','LIVE'); log('Connected ✓','ok'); });
+  client.on('error',   e  => { setConn('err','ERROR'); log('MQTT: '+e.message,'err'); });
+  client.on('offline', () => { setConn('','OFFLINE'); log('Offline — retrying...','err'); });
 }
 
-function mqttPublish(topic,payload){
-  return new Promise((res,rej)=>{
-    const pub=()=>client.publish(topic,JSON.stringify(payload),{qos:1},err=>{
-      if(err){log('Publish failed','err');rej(err)}else{log('Published → '+topic,'ok');res()}
+function mqttPublish(topic, payload) {
+  return new Promise((resolve, reject) => {
+    const pub = () => client.publish(topic, JSON.stringify(payload), {qos:1}, err => {
+      if (err) { log('Publish failed: '+err.message,'err'); reject(err); }
+      else     { log('Published → '+topic,'ok'); resolve(); }
     });
-    if(client&&client.connected)pub();
-    else setTimeout(()=>client&&client.connected?pub():rej(new Error('Not connected')),2000);
+    if (client && client.connected) pub();
+    else setTimeout(() => {
+      if (client && client.connected) pub();
+      else { log('Still not connected','err'); reject(new Error('Not connected')); }
+    }, 2000);
   });
 }
 
-// Image helper: returns <img> with fallback, or placeholder div
-function thumbHTML(p,cls,style){
-  return `<img class="${cls}" style="${style||''}" src="${p.img}" alt="${p.name}"
-    onerror="this.onerror=null;this.src='${p.fallbackImg}';this.onerror=function(){this.style.display='none';this.nextElementSibling.style.display='flex'}">
-  <div class="${cls.replace('thumb','thumb-placeholder')}" style="display:none;background:${PRODUCT_COLORS[p.id]};${style||''}">${PRODUCT_EMOJIS[p.id]}</div>`;
-}
-
-function renderProducts(){
-  document.getElementById('itemsGrid').innerHTML=PRODUCTS.map(p=>{
-    const qty=cart[p.id]||0,sel=qty>0,noSt=p.stock===0,lowSt=p.stock<=2&&!noSt;
+/* ─── RENDER PRODUCTS ─── */
+function renderProducts() {
+  document.getElementById('itemsGrid').innerHTML = PRODUCTS.map(p => {
+    const qty  = cart[p.id] || 0;
+    const sel  = qty > 0;
+    const noSt = p.stock === 0;
+    const lowSt= p.stock <= 2 && !noSt;
     return `
     <div class="item-card ${sel?'selected':''}" id="card_${p.id}"
-         onclick="${noSt?'':(`toggleItem('${p.id}',this,event)`)}"
-         style="${noSt?'opacity:.35;cursor:not-allowed;pointer-events:none':''}">
-      <div class="item-row">
-        <div class="item-img-wrap">
-          <img src="${p.img}" alt="${p.name}" onerror="this.onerror=null;this.src='${p.fallbackImg}'">
-        </div>
-        <div class="item-body">
-          <div class="item-header">
-            <span class="item-badge">${p.id}</span>
-            <div class="item-sel-indicator">✓</div>
-          </div>
-          <div class="item-name">${p.name}</div>
-          <div style="font-size:0.65rem;color:var(--muted);margin-bottom:4px">${p.tag}</div>
-          <div class="item-price"><sup>₹</sup>${p.price}</div>
-          <div class="item-stock ${lowSt?'low':''}">
-            ${noSt?'Out of stock':p.stock+' in stock'}
-          </div>
-        </div>
+         onclick="${noSt ? '' : `toggleItem('${p.id}')`}"
+         style="${noSt ? 'opacity:.3;cursor:not-allowed;pointer-events:none' : ''}">
+
+      <div class="item-img-wrap">
+        <img src="${p.img}" alt="${p.name}"
+             onerror="this.onerror=null;this.src='${p.fallbackImg}'">
       </div>
-      <div class="qty-row">
-        <button class="qty-btn" onclick="event.stopPropagation();changeQty('${p.id}',-1)">−</button>
-        <span class="qty-val">${qty}</span>
-        <button class="qty-btn" onclick="event.stopPropagation();changeQty('${p.id}',+1)">+</button>
+
+      <div class="item-body">
+        <div class="item-header">
+          <span class="item-badge">${p.id}</span>
+          <div class="item-check">✓</div>
+        </div>
+        <div class="item-name">${p.name}</div>
+        <div class="item-tag">${p.tag}</div>
+        <div class="item-price"><sup>₹</sup>${p.price}</div>
+        <div class="item-stock ${lowSt?'low':''}">
+          ${noSt ? 'OUT OF STOCK' : p.stock + ' in stock'}
+        </div>
+        <div class="qty-row">
+          <button class="qty-btn" onclick="event.stopPropagation();changeQty('${p.id}',-1)">−</button>
+          <span class="qty-val">${qty}</span>
+          <button class="qty-btn" onclick="event.stopPropagation();changeQty('${p.id}',+1)">+</button>
+        </div>
       </div>
     </div>`;
   }).join('');
 }
 
-function renderOrder(){
-  const listEl=document.getElementById('orderList'),
-        tBar=document.getElementById('totalBar'),
-        tAmt=document.getElementById('totalAmt'),
-        btn=document.getElementById('btnPay'),
-        lbl=document.getElementById('payLabel'),
-        entries=PRODUCTS.filter(p=>(cart[p.id]||0)>0);
-  if(!entries.length){
-    listEl.innerHTML='<div class="order-empty">No items selected</div>';
-    tBar.style.display='none';btn.disabled=true;
-    btn.classList.remove('prefetching','ready');
-    lbl.textContent='Pay with Razorpay';
+/* ─── RENDER ORDER ─── */
+function renderOrder() {
+  const listEl   = document.getElementById('orderList');
+  const totalBar = document.getElementById('totalBar');
+  const totalAmt = document.getElementById('totalAmt');
+  const btnPay   = document.getElementById('btnPay');
+  const payLabel = document.getElementById('payLabel');
+  const entries  = PRODUCTS.filter(p => (cart[p.id]||0) > 0);
+
+  if (!entries.length) {
+    listEl.innerHTML = '<div class="order-empty">No items selected</div>';
+    totalBar.style.display = 'none';
+    btnPay.disabled = true;
+    btnPay.classList.remove('prefetching','ready');
+    payLabel.innerHTML = '💳 &nbsp;Pay with Razorpay';
     setPayStatus('','');
   } else {
-    listEl.innerHTML=entries.map(p=>`
+    listEl.innerHTML = entries.map(p => `
       <div class="order-row">
         <div class="order-row-left">
           <img class="order-thumb" src="${p.img}" alt="${p.name}"
@@ -372,131 +548,211 @@ function renderOrder(){
             <span class="oqty-val">${cart[p.id]}</span>
             <button class="oqty-btn" onclick="changeQty('${p.id}',+1)">+</button>
           </div>
-          <span class="order-price">₹${p.price*cart[p.id]}</span>
+          <span class="order-price">₹${p.price * cart[p.id]}</span>
           <button class="row-remove" onclick="removeItem('${p.id}')">✕</button>
         </div>
       </div>`).join('');
-    tBar.style.display='flex';
-    const t=total();
-    tAmt.textContent='₹'+t;
-    btn.disabled=false;
-    lbl.textContent='Pay ₹'+t+' with Razorpay';
+    totalBar.style.display = 'flex';
+    const t = total();
+    totalAmt.textContent = '₹' + t;
+    btnPay.disabled = false;
+    payLabel.innerHTML = `💳 &nbsp;Pay ₹${t} with Razorpay`;
   }
 }
 
-function total(){return PRODUCTS.reduce((s,p)=>s+p.price*(cart[p.id]||0),0)}
-function buildItems(){return PRODUCTS.filter(p=>(cart[p.id]||0)>0).map(p=>({slot:p.id,name:p.name,qty:cart[p.id],price:p.price,subtotal:p.price*cart[p.id]}))}
+/* ─── HELPERS ─── */
+function total() {
+  return PRODUCTS.reduce((s,p) => s + p.price * (cart[p.id]||0), 0);
+}
+function buildItems() {
+  return PRODUCTS.filter(p => (cart[p.id]||0) > 0).map(p => ({
+    slot:p.id, name:p.name, qty:cart[p.id], price:p.price, subtotal:p.price*cart[p.id]
+  }));
+}
 
-function toggleItem(id,el,e){
-  const p=PRODUCTS.find(x=>x.id===id);if(!p||!p.stock)return;
-  if((cart[id]||0)>0)delete cart[id];else cart[id]=1;
-  renderProducts();renderOrder();onCartChange();
+/* ─── ACTIONS ─── */
+function toggleItem(id) {
+  const p = PRODUCTS.find(x => x.id===id);
+  if (!p || p.stock===0) return;
+  if ((cart[id]||0) > 0) delete cart[id]; else cart[id] = 1;
+  renderProducts(); renderOrder(); onCartChange();
 }
-function changeQty(id,d){
-  const p=PRODUCTS.find(x=>x.id===id),n=(cart[id]||0)+d;
-  if(n<=0)delete cart[id];
-  else if(n>p.stock){log('Max stock reached','err');return}
-  else cart[id]=n;
-  renderProducts();renderOrder();onCartChange();
+function changeQty(id, delta) {
+  const p   = PRODUCTS.find(x => x.id===id);
+  const nxt = (cart[id]||0) + delta;
+  if (nxt <= 0) delete cart[id];
+  else if (nxt > p.stock) { log('Max stock reached for '+p.name,'err'); return; }
+  else cart[id] = nxt;
+  renderProducts(); renderOrder(); onCartChange();
 }
-function removeItem(id){delete cart[id];renderProducts();renderOrder();onCartChange();log('Item removed','info')}
-function cancelAll(){
-  cart={};prefetchedOrder=null;clearTimeout(prefetchTimer);
-  renderProducts();renderOrder();
+function removeItem(id) {
+  delete cart[id];
+  renderProducts(); renderOrder(); onCartChange();
+  log('Item removed','info');
+}
+function cancelAll() {
+  cart = {}; prefetchedOrder = null; clearTimeout(prefetchTimer);
+  renderProducts(); renderOrder();
   setPayStatus('','');
   log('Cart cleared','info');
 }
-
-// Called after every cart mutation
-function onCartChange(){
-  if(total()>0) schedulePrefetch();
-  else{prefetchedOrder=null;clearTimeout(prefetchTimer);setPayStatus('','')}
+function onCartChange() {
+  if (total() > 0) schedulePrefetch();
+  else { prefetchedOrder = null; clearTimeout(prefetchTimer); setPayStatus('',''); }
 }
 
-async function handlePay(btn,e){
-  const t=total();if(!t)return;
+/* ─── PAYMENT ─── */
+async function handlePay(btn, e) {
+  const t = total(); if (!t) return;
 
-  // ── FAST PATH: use pre-fetched order ──────────────────────────────────────
-  if(prefetchedOrder&&prefetchedOrder.order_id){
-    log('Using pre-fetched order: '+prefetchedOrder.order_id,'ok');
-    openRazorpay(prefetchedOrder,btn);
-    prefetchedOrder=null;
+  // FAST PATH — use pre-fetched order
+  if (prefetchedOrder && prefetchedOrder.order_id) {
+    log('Using pre-fetched order: ' + prefetchedOrder.order_id, 'ok');
+    openRazorpay(prefetchedOrder, btn);
+    prefetchedOrder = null;
     return;
   }
 
-  // ── SLOW PATH: fetch now (fallback if pre-fetch failed/missed) ────────────
+  // SLOW PATH — fetch now
   log('Fetching order (pre-fetch missed)...','info');
-  btn.disabled=true;
-  try{
-    const res=await fetch(API_BASE+'/api/create-order',{
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({amount:t}),
-      signal:AbortSignal.timeout(15000)
+  btn.disabled = true;
+  try {
+    const res  = await fetch(API_BASE + '/api/create-order', {
+      method: 'POST',
+      headers: { 'Content-Type':'application/json' },
+      body: JSON.stringify({ amount:t }),
+      signal: AbortSignal.timeout(15000)
     });
-    const data=await res.json();
-    if(!data.order_id||!data.key){log('Order creation failed','err');btn.disabled=false;return}
-    log('Order created: '+data.order_id,'ok');
-    openRazorpay(data,btn);
-  }catch(err){log('Error: '+err.message,'err');btn.disabled=false}
+    const data = await res.json();
+    if (!data.order_id || !data.key) { log('Order creation failed','err'); btn.disabled=false; return; }
+    log('Order created: ' + data.order_id, 'ok');
+    openRazorpay(data, btn);
+  } catch(err) {
+    log('Error: ' + err.message,'err');
+    btn.disabled = false;
+  }
 }
 
-function openRazorpay(data,btn){
-  const t=total();
-  const rzp=new window.Razorpay({
-    key:data.key,
-    order_id:data.order_id,
-    amount:data.amount,
-    currency:data.currency||'INR',
-    name:'VendBot 3000',
-    description:'Vending Machine Payment',
-    prefill:{contact:'9999999999',email:'test@razorpay.com'},
-    theme:{color:'#4A6CF7'},
-    handler:function(r){log('Payment success: '+r.razorpay_payment_id,'ok');onSuccess(r)},
-    modal:{ondismiss:function(){
-      log('Payment cancelled','info');
-      btn.disabled=false;
-      // Re-prefetch after dismissal since the order is used up
-      schedulePrefetch();
-    }}
+function openRazorpay(data, btn) {
+  const rzp = new window.Razorpay({
+    key:         data.key,
+    order_id:    data.order_id,
+    amount:      data.amount,
+    currency:    data.currency || 'INR',
+    name:        'VendBot 3000',
+    description: 'Vending Machine Payment',
+    prefill:     { contact:'9999999999', email:'test@razorpay.com' },
+    theme:       { color:'#7c6fff' },
+    handler: function(response) {
+      log('Payment success: ' + response.razorpay_payment_id, 'ok');
+      onPaymentSuccess(response, buildItems(), total());
+    },
+    modal: {
+      ondismiss: function() {
+        log('Payment cancelled','info');
+        btn.disabled = false;
+        schedulePrefetch();
+      }
+    }
   });
-  rzp.on('payment.failed',function(r){log('Payment failed: '+r.error.description,'err');btn.disabled=false;schedulePrefetch()});
+  rzp.on('payment.failed', function(r) {
+    log('Payment failed: ' + r.error.description,'err');
+    btn.disabled = false;
+    schedulePrefetch();
+  });
   rzp.open();
 }
 
-function onSuccess(r){
-  const t=total(),items=buildItems(),ts=new Date().toISOString();
-  mqttPublish(TOPICS.order,{transactionId:r.razorpay_payment_id,razorpayOrderId:r.razorpay_order_id,timestamp:ts,paymentMethod:'ONLINE',items,totalAmount:t});
-  mqttPublish(TOPICS.payment,{transactionId:r.razorpay_payment_id,razorpayOrderId:r.razorpay_order_id,razorpaySignature:r.razorpay_signature,timestamp:ts,paymentMethod:'ONLINE',amountPaid:t,currency:'INR',changeDue:0,status:'SUCCESS',items});
-  items.forEach(i=>{const p=PRODUCTS.find(x=>x.id===i.slot);if(p)p.stock-=i.qty});
-  const summary=items.map(i=>`${i.name} ×${i.qty}  ₹${i.subtotal}`).join('\n');
-  showModal('✅','Payment successful',`${summary}\n\nTotal paid: ₹${t}`,r.razorpay_payment_id);
-  cart={};prefetchedOrder=null;
-  renderProducts();renderOrder();
-  document.getElementById('btnPay').disabled=false;
+function onPaymentSuccess(response, items, t) {
+  const ts = new Date().toISOString();
+
+  mqttPublish(TOPICS.order, {
+    transactionId: response.razorpay_payment_id,
+    razorpayOrderId: response.razorpay_order_id,
+    timestamp: ts, paymentMethod:'ONLINE', items, totalAmount:t
+  });
+  mqttPublish(TOPICS.payment, {
+    transactionId: response.razorpay_payment_id,
+    razorpayOrderId: response.razorpay_order_id,
+    razorpaySignature: response.razorpay_signature,
+    timestamp: ts, paymentMethod:'ONLINE',
+    amountPaid:t, currency:'INR', changeDue:0, status:'SUCCESS', items
+  });
+
+  // Decrement local stock
+  items.forEach(i => {
+    const p = PRODUCTS.find(x => x.id===i.slot);
+    if (p) p.stock = Math.max(0, p.stock - i.qty);
+  });
+
+  const summary = items.map(i => `${i.name} ×${i.qty}  ₹${i.subtotal}`).join('\n');
+  showModal('✅','PAYMENT SUCCESS', `${summary}\n\nTotal Paid: ₹${t}`, response.razorpay_payment_id);
+
+  // Send backend verification
+  sendBackendVerification(response, items, t);
+
+  cart = {}; prefetchedOrder = null;
+  renderProducts(); renderOrder();
+  document.getElementById('btnPay').disabled = false;
   setPayStatus('','');
 }
 
-function showModal(icon,title,body,txn){
-  document.getElementById('modalIcon').textContent=icon;
-  document.getElementById('modalTitle').textContent=title;
-  document.getElementById('modalBody').textContent=body;
-  document.getElementById('modalTxn').textContent=txn?'TXN: '+txn:'';
+async function sendBackendVerification(response, items, totalAmount) {
+  try {
+    const res = await fetch(API_BASE + '/api/verify-payment', {
+      method: 'POST',
+      headers: { 'Content-Type':'application/json' },
+      body: JSON.stringify({
+        razorpay_order_id:   response.razorpay_order_id,
+        razorpay_payment_id: response.razorpay_payment_id,
+        razorpay_signature:  response.razorpay_signature,
+        items,
+        totalAmount,
+      })
+    });
+    const data = await res.json();
+    if (data.success) log('Backend verified ✓','ok');
+    else log('Backend verification failed','err');
+  } catch(err) {
+    log('Backend verify skipped: ' + err.message,'info');
+  }
+}
+
+/* ─── MODAL ─── */
+function showModal(icon, title, body, txn) {
+  document.getElementById('modalIcon').textContent  = icon;
+  document.getElementById('modalTitle').textContent = title;
+  document.getElementById('modalBody').textContent  = body;
+  document.getElementById('modalTxn').textContent   = txn ? 'TXN: '+txn : '';
   document.getElementById('overlay').classList.add('show');
 }
-function closeModal(){document.getElementById('overlay').classList.remove('show')}
-function setConn(s,l){document.getElementById('connDot').className='conn-dot '+s;document.getElementById('connLabel').textContent=l}
-function log(msg,type='info'){
-  const feed=document.getElementById('logFeed'),ts=new Date().toLocaleTimeString('en-GB',{hour12:false});
-  const el=document.createElement('div');el.className='log-line';
-  el.innerHTML=`<span class="log-ts">[${ts}]</span><span class="log-${type}">${msg}</span>`;
-  feed.prepend(el);while(feed.children.length>40)feed.removeChild(feed.lastChild);
-}
-function updateClock(){document.getElementById('clock').textContent=new Date().toLocaleTimeString('en-GB',{hour12:false})}
+function closeModal() { document.getElementById('overlay').classList.remove('show'); }
 
-// Init
-renderProducts();renderOrder();mqttConnect();updateClock();setInterval(updateClock,1000);
-warmBackend();  // ← warm Render on page load
+/* ─── UTILS ─── */
+function setConn(state, label) {
+  document.getElementById('connDot').className   = 'conn-dot ' + state;
+  document.getElementById('connLabel').textContent = label;
+}
+function log(msg, type='info') {
+  const feed = document.getElementById('logFeed');
+  const ts   = new Date().toLocaleTimeString('en-GB',{hour12:false});
+  const el   = document.createElement('div');
+  el.className = 'log-line';
+  el.innerHTML = `<span class="log-ts">[${ts}]</span><span class="log-${type}">${msg}</span>`;
+  feed.prepend(el);
+  while (feed.children.length > 40) feed.removeChild(feed.lastChild);
+}
+function updateClock() {
+  document.getElementById('clock').textContent = new Date().toLocaleTimeString('en-GB',{hour12:false});
+}
+
+/* ─── INIT ─── */
+renderProducts();
+renderOrder();
+mqttConnect();
+updateClock();
+setInterval(updateClock, 1000);
+warmBackend();
 </script>
 </body>
 </html>
