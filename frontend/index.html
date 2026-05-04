@@ -342,10 +342,10 @@ const API_BASE      = 'https://tmkc-sarvadnya.onrender.com';
 
 // ── PRODUCTS: price/tag/image are static; stock is always loaded from the API ──
 const PRODUCTS = [
-  { id:'A1', name:'Khatta Meetha', img:'Khatta Mitha Mix.png', fallbackImg:'https://images.jdmagicbox.com/quickquotes/images_main/balaji-khatta-meetha-namkeen-2216297604-h3y2l.jpg', price:1, stock:0, tag:'Tangy & Sweet' },
-  { id:'A2', name:'Tikha Meetha',  img:'Tikha Mitha Mix.png',  fallbackImg:'https://images.jdmagicbox.com/quickquotes/images_main/balaji-tikha-meetha-namkeen-2216297604-h3y2l.jpg', price:1, stock:0, tag:'Spicy & Sweet' },
-  { id:'B1', name:'Farali Chiwda', img:'Farali Chevda.png',    fallbackImg:'https://5.imimg.com/data5/SELLER/Default/2021/8/WF/KT/WS/135395934/balaji-farali-chevdo.jpg',           price:1, stock:0, tag:'Light & Crispy' },
-  { id:'B2', name:'Chataka Pataka',img:'Chataka Pataka.png',   fallbackImg:'https://5.imimg.com/data5/SELLER/Default/2021/8/LB/BI/RQ/135395934/balaji-chataka-pataka.jpg',          price:1, stock:0, tag:'Masala Masti' },
+  { id:'A1', name:'Khatta Meetha', img:'Khatta Mitha Mix.png', fallbackImg:'https://images.jdmagicbox.com/quickquotes/images_main/balaji-khatta-meetha-namkeen-2216297604-h3y2l.jpg', price:0.1, stock:0, tag:'Tangy & Sweet' },
+  { id:'A2', name:'Tikha Meetha',  img:'Tikha Mitha Mix.png',  fallbackImg:'https://images.jdmagicbox.com/quickquotes/images_main/balaji-tikha-meetha-namkeen-2216297604-h3y2l.jpg', price:0.1, stock:0, tag:'Spicy & Sweet' },
+  { id:'B1', name:'Farali Chiwda', img:'Farali Chevda.png',    fallbackImg:'https://5.imimg.com/data5/SELLER/Default/2021/8/WF/KT/WS/135395934/balaji-farali-chevdo.jpg',           price:0.1, stock:0, tag:'Light & Crispy' },
+  { id:'B2', name:'Chataka Pataka',img:'Chataka Pataka.png',   fallbackImg:'https://5.imimg.com/data5/SELLER/Default/2021/8/LB/BI/RQ/135395934/balaji-chataka-pataka.jpg',          price:0.1, stock:0, tag:'Masala Masti' },
 ];
 
 let cart = {}, client = null, prefetchedOrder = null, prefetchTimer = null, isFetching = false;
