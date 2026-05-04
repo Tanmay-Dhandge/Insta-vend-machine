@@ -27,26 +27,20 @@ PubSubClient client(espClient);
 
 unsigned long lastReconnect = 0;
 
-// ── Normalize Slot String ──────────────────────────────────
+// ── Normalize Slot ─────────────────────────────────────────
 void normalizeSlot(char* slot) {
-
-  // Convert to lowercase + remove '-' or spaces
   int j = 0;
-
   for (int i = 0; slot[i]; i++) {
     char c = tolower(slot[i]);
-
     if (c != ' ' && c != '-') {
       slot[j++] = c;
     }
   }
-
   slot[j] = '\0';
 }
 
 // ── Slot → Pin Mapping ─────────────────────────────────────
 int pinForSlot(char* slot) {
-
   normalizeSlot(slot);
 
   if (strcmp(slot, "a1") == 0) return PIN_A1;
@@ -56,24 +50,20 @@ int pinForSlot(char* slot) {
 
   Serial.print("[ERROR] Invalid slot: ");
   Serial.println(slot);
-
   return -1;
 }
 
-// ── Timing per Slot (ms) ───────────────────────────────────
+// ── Time per Slot ──────────────────────────────────────────
 int timeForSlot(const char* slot) {
-
   if (strcmp(slot, "a1") == 0) return 1100;
   if (strcmp(slot, "a2") == 0) return 1200;
   if (strcmp(slot, "b1") == 0) return 1150;
   if (strcmp(slot, "b2") == 0) return 1150;
-
   return 1100;
 }
 
-// ── Dispense Function (Clean & Reusable) ───────────────────
+// ── Dispense Function ──────────────────────────────────────
 void dispense(int pin, int duration, int qty) {
-
   for (int i = 0; i < qty; i++) {
 
     Serial.printf("Dispensing %d/%d\n", i + 1, qty);
@@ -134,21 +124,17 @@ void callback(char* topic, byte* payload, unsigned int length) {
     strncpy(slot, rawSlot, sizeof(slot));
     slot[sizeof(slot) - 1] = '\0';
 
-    Serial.printf("\n[Item %d]\n", index);
-    Serial.print("Raw Slot : '");
-    Serial.print(slot);
-    Serial.println("'");
-
     int pin = pinForSlot(slot);
     int duration = timeForSlot(slot);
 
-    Serial.printf("Normalized Slot : %s\n", slot);
-    Serial.printf("Qty             : %d\n", qty);
-    Serial.printf("GPIO Pin        : %d\n", pin);
-    Serial.printf("Time            : %d ms\n", duration);
+    Serial.printf("\n[Item %d]\n", index);
+    Serial.printf("Slot : %s\n", slot);
+    Serial.printf("Qty  : %d\n", qty);
+    Serial.printf("Pin  : %d\n", pin);
+    Serial.printf("Time : %d ms\n", duration);
 
     if (pin == -1 || qty <= 0) {
-      Serial.println("[SKIP] Invalid data");
+      Serial.println("[SKIP] Invalid item");
       continue;
     }
 
@@ -162,7 +148,7 @@ void callback(char* topic, byte* payload, unsigned int length) {
   Serial.println("============================\n");
 }
 
-// ── Reconnect ─────────────────────────────────────────────
+// ── Reconnect MQTT ─────────────────────────────────────────
 bool reconnect() {
 
   Serial.println("Connecting MQTT...");
