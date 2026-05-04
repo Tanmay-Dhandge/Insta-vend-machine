@@ -340,16 +340,33 @@ const MQTT_PASSWORD = 'FklRd4q@2&7DUc,.AZx6';
 const TOPICS        = { order:'vendbot/order', payment:'vendbot/payment' };
 const API_BASE      = 'https://tmkc-sarvadnya.onrender.com';
 
+// ── PRODUCTS: price/tag/image are static; stock is always loaded from the API ──
 const PRODUCTS = [
-  { id:'A1', name:'Khatta Meetha', img:'Khatta Mitha Mix.png', fallbackImg:'https://images.jdmagicbox.com/quickquotes/images_main/balaji-khatta-meetha-namkeen-2216297604-h3y2l.jpg', price:1, stock:4, tag:'Tangy & Sweet' },
-  { id:'A2', name:'Tikha Meetha',  img:'Tikha Mitha Mix.png',  fallbackImg:'https://images.jdmagicbox.com/quickquotes/images_main/balaji-tikha-meetha-namkeen-2216297604-h3y2l.jpg', price:1, stock:4, tag:'Spicy & Sweet' },
-  { id:'B1', name:'Farali Chiwda', img:'Farali Chevda.png',    fallbackImg:'https://5.imimg.com/data5/SELLER/Default/2021/8/WF/KT/WS/135395934/balaji-farali-chevdo.jpg',           price:1, stock:4, tag:'Light & Crispy' },
-  { id:'B2', name:'Chataka Pataka',img:'Chataka Pataka.png',   fallbackImg:'https://5.imimg.com/data5/SELLER/Default/2021/8/LB/BI/RQ/135395934/balaji-chataka-pataka.jpg',          price:1, stock:4, tag:'Masala Masti' },
+  { id:'A1', name:'Khatta Meetha', img:'Khatta Mitha Mix.png', fallbackImg:'https://images.jdmagicbox.com/quickquotes/images_main/balaji-khatta-meetha-namkeen-2216297604-h3y2l.jpg', price:1, stock:0, tag:'Tangy & Sweet' },
+  { id:'A2', name:'Tikha Meetha',  img:'Tikha Mitha Mix.png',  fallbackImg:'https://images.jdmagicbox.com/quickquotes/images_main/balaji-tikha-meetha-namkeen-2216297604-h3y2l.jpg', price:1, stock:0, tag:'Spicy & Sweet' },
+  { id:'B1', name:'Farali Chiwda', img:'Farali Chevda.png',    fallbackImg:'https://5.imimg.com/data5/SELLER/Default/2021/8/WF/KT/WS/135395934/balaji-farali-chevdo.jpg',           price:1, stock:0, tag:'Light & Crispy' },
+  { id:'B2', name:'Chataka Pataka',img:'Chataka Pataka.png',   fallbackImg:'https://5.imimg.com/data5/SELLER/Default/2021/8/LB/BI/RQ/135395934/balaji-chataka-pataka.jpg',          price:1, stock:0, tag:'Masala Masti' },
 ];
-const PRODUCT_COLORS = { A1:'#7EC8B0', A2:'#F4A261', B1:'#F7D060', B2:'#E76F51' };
-const PRODUCT_EMOJIS = { A1:'🌿', A2:'🌶️', B1:'🌾', B2:'💥' };
 
 let cart = {}, client = null, prefetchedOrder = null, prefetchTimer = null, isFetching = false;
+
+// ── STOCK SYNC: fetch live stock from the same API the dashboard uses ──
+async function syncStock() {
+  try {
+    const r = await fetch(API_BASE + '/api/stock', { signal: AbortSignal.timeout(8000) });
+    if (!r.ok) throw new Error('stock ' + r.status);
+    const data = await r.json();
+    const stockArr = data.stock || [];
+    // Map API response onto PRODUCTS (same slot-key as dashboard uses)
+    stockArr.forEach(s => {
+      const p = PRODUCTS.find(x => x.id === s.slot);
+      if (p) p.stock = s.stock;
+    });
+    log('Stock synced from server', 'ok');
+  } catch (e) {
+    log('Stock sync failed: ' + e.message + ' — using cached values', 'err');
+  }
+}
 
 function warmBackend() {
   fetch(API_BASE + '/api/create-order', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({amount:1}), signal:AbortSignal.timeout(8000) })
@@ -486,15 +503,18 @@ function openRazorpay(data,btn){
   rzp.on('payment.failed',function(r){log('Payment failed: '+r.error.description,'err');btn.disabled=false;schedulePrefetch();});
   rzp.open();
 }
-function onPaymentSuccess(response,items,t){
+
+async function onPaymentSuccess(response,items,t){
   const ts=new Date().toISOString();
   mqttPublish(TOPICS.order,{transactionId:response.razorpay_payment_id,razorpayOrderId:response.razorpay_order_id,timestamp:ts,paymentMethod:'ONLINE',items,totalAmount:t});
   mqttPublish(TOPICS.payment,{transactionId:response.razorpay_payment_id,razorpayOrderId:response.razorpay_order_id,razorpaySignature:response.razorpay_signature,timestamp:ts,paymentMethod:'ONLINE',amountPaid:t,currency:'INR',changeDue:0,status:'SUCCESS',items});
-  items.forEach(i=>{const p=PRODUCTS.find(x=>x.id===i.slot);if(p)p.stock=Math.max(0,p.stock-i.qty);});
   const summary=items.map(i=>`${i.name} ×${i.qty}  ₹${i.subtotal}`).join('\n');
   showModal('✅','PAYMENT SUCCESS',`${summary}\n\nTotal Paid: ₹${t}`,response.razorpay_payment_id);
   sendBackendVerification(response,items,t);
-  cart={};prefetchedOrder=null;renderProducts();renderOrder();document.getElementById('btnPay').disabled=false;setPayStatus('','');
+  cart={};prefetchedOrder=null;
+  // ── Re-fetch stock from server after purchase so counts stay accurate ──
+  await syncStock();
+  renderProducts();renderOrder();document.getElementById('btnPay').disabled=false;setPayStatus('','');
 }
 async function sendBackendVerification(response,items,totalAmount){
   try{const res=await fetch(API_BASE+'/api/verify-payment',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({razorpay_order_id:response.razorpay_order_id,razorpay_payment_id:response.razorpay_payment_id,razorpay_signature:response.razorpay_signature,items,totalAmount})});const data=await res.json();if(data.success)log('Backend verified ✓','ok');else log('Backend verification failed','err');}
@@ -507,7 +527,18 @@ function setConn(state,label){document.getElementById('connDot').className='conn
 function log(msg,type='info'){const feed=document.getElementById('logFeed'),ts=new Date().toLocaleTimeString('en-GB',{hour12:false}),el=document.createElement('div');el.className='log-line';el.innerHTML=`<span class="log-ts">[${ts}]</span><span class="log-${type}">${msg}</span>`;feed.prepend(el);while(feed.children.length>40)feed.removeChild(feed.lastChild);}
 function updateClock(){document.getElementById('clock').textContent=new Date().toLocaleTimeString('en-GB',{hour12:false});}
 
-renderProducts();renderOrder();mqttConnect();updateClock();setInterval(updateClock,1000);warmBackend();
+// ── INIT: load stock first, then render, then connect ──
+(async function init(){
+  renderProducts(); // render with stock=0 placeholders while loading
+  renderOrder();
+  await syncStock(); // fetch live stock from server (same endpoint as dashboard)
+  renderProducts(); // re-render with real stock counts
+  mqttConnect();
+  warmBackend();
+})();
+
+updateClock();
+setInterval(updateClock,1000);
 </script>
 </body>
 </html>
